@@ -26,7 +26,7 @@ PITCH_DECK_CORE_COMPANY_INSTRUCTION = """
         "business_model": "<string | one of: b2b, b2c, b2b2c, marketplace, unknown>",
         "value_proposition": "<string | unique differentiator, competitive advantage, or key value proposition that makes the company stand out>",
         "product_stage": "<string | current company or product maturity stage such as Idea, Prototype, MVP, Beta, Early Revenue, Growth, Scale>"
-    }}}}
+    }}
     ```
 
     Deck content:

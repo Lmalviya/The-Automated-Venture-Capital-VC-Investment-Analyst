@@ -25,7 +25,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class TextLLMConfig(BaseSettings):
     base_url: HttpUrl = Field(..., alias="LLM_BASE_URL")
-    provider: Literal["openai", "anthropic", "gemini"] | None = Field(default=None, alias="LLM_PROVIDER")
+    provider: str | None = Field(default=None, alias="LLM_PROVIDER")
     api_key: SecretStr | None = Field(default=None, alias="LLM_API_KEY")
     model: str | None = Field(default=None, alias="TEXT_MODEL_NAME")
     image_model: str | None = Field(default=None, alias="IMAGE_MODEL_NAME")
@@ -36,7 +36,7 @@ class TextLLMConfig(BaseSettings):
 
 class ImageVLMConfig(BaseSettings):
     base_url: HttpUrl = Field(..., alias="VLM_BASE_URL")
-    provider: Literal["openai", "anthropic", "gemini"] | None = Field(default=None, alias="VLM_PROVIDER")
+    provider: str | None = Field(default=None, alias="VLM_PROVIDER")
     api_key: SecretStr | None = Field(default=None, alias="VLM_API_KEY")
     model: str | None = Field(default=None, alias="IMAGE_MODEL_NAME")
     temperature: float = Field(default=0.2, alias="VLM_TEMPERATURE", ge=0.0, le=2.0)
@@ -68,7 +68,7 @@ class Settings(BaseSettings):
     environment: Literal["local", "dev", "staging", "prod"] = Field(default="local", alias="DEPLOYMENT_ENVIRONMENT_TYPE")
     debug: bool = Field(default=True, alias="DEBUGGING")
 
-    llm: ImageVLMConfig = ImageVLMConfig()
+    llm: TextLLMConfig = TextLLMConfig()
     vlm: ImageVLMConfig = ImageVLMConfig()
     Object_db: ObjectDBConfig = ObjectDBConfig()
 
