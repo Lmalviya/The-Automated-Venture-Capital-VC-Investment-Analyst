@@ -45,11 +45,32 @@ def _llm_call(messages: List[Dict], model: str, max_token: int, temperature:floa
 
 def query_text_model(messages: List[Dict], response_format: AdaptorType, log) -> str:
     log.info("Querying text model")
-    return _llm_call(messages, settings.llm.model, settings.llm.max_tokens, settings.llm.temperature, log)
+    return _llm_call(messages, settings.llm.model, settings.llm.max_tokens, settings.llm.temperature, log, response_format)
 
 def query_vision_model(messages: List[Dict], log) -> str:
     """Helper to call OpenAI Vision API and extract structured content from slide image."""
 
     log.info("Sending slide/page image to vision model")
     return _llm_call(messages, settings.vlm.model, settings.vlm.max_tokens, settings.vlm.temperature, log)
-    
+
+
+# =========================================================
+# Centralized LangChain LLM instance
+# Import this in orchestrators and managers via:
+#   from vs_analyst.utility.llm import llm
+# Only call llm.bind_tools([...]) in the orchestrator.
+# =========================================================
+
+from langchain_openai import ChatOpenAI
+
+llm = ChatOpenAI(
+    model=settings.llm.model or "mistralai/mistral-nemotron",
+    openai_api_base=str(settings.llm.base_url),
+    openai_api_key=(
+        settings.llm.api_key.get_secret_value()
+        if settings.llm.api_key
+        else "dummy_key"
+    ),
+    temperature=settings.llm.temperature,
+    max_tokens=settings.llm.max_tokens,
+)

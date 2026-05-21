@@ -7,10 +7,13 @@ from botocore.exceptions import ClientError
 
 from vs_analyst.config import settings
 
+from vs_analyst.utility.logs import get_logger
+logger = get_logger(__name__)
+
 def download_object(
     file_url: str,
-    local_dir: str = "downloads",
-    filename: str | None = None,
+    local_dir: str,
+    filename: str | None,
     log
 ) -> str:
     """

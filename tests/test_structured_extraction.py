@@ -3,7 +3,7 @@ import asyncio
 from unittest.mock import patch, MagicMock
 from pydantic import BaseModel
 
-from vs_analyst.tools.intake.file_extractor import (
+from vs_analyst.tools.file_extractor import (
     run_parallel_extraction,
     ExtractedPage,
     ExtractionMode
@@ -76,7 +76,7 @@ async def test_run_parallel_extraction():
         return schema_mock_map[response_format]
         
     # 3. Patch query_structured_model in file_extractor
-    with patch("vs_analyst.tools.intake.file_extractor.query_structured_model", side_effect=mock_query_structured) as mock_query:
+    with patch("vs_analyst.tools.file_extractor.query_structured_model", side_effect=mock_query_structured) as mock_query:
         # Define dummy pages to pass to parallel extractor
         dummy_pages = [
             ExtractedPage(
