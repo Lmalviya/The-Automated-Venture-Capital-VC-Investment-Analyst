@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 from functools import lru_cache
 from typing import Literal
 

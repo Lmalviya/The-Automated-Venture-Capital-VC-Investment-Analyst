@@ -16,6 +16,10 @@ dependencies = [
     "pywin32>=311",
     "boto3>=1.43.11",
     "botocore>=1.43.11",
+    "langchain>=0.2.0",
+    "langchain-core>=0.2.0",
+    "langgraph>=0.1.0",
+    "langchain-openai>=0.1.0",
 ]
 
 [build-system]
