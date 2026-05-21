@@ -9,6 +9,7 @@ from .pitch_deck_prompts import (
     PITCH_DECK_FOUNDERS_INSTRUCTION,
     PITCH_DECK_FINANCIALS_AND_ASK_INSTRUCTION,
     PITCH_DECK_SLIDE_SUMMARIES_INSTRUCTION,
+    QUERY_PITCH_DECK_CONTENT
 )
 from .intak_layer import (
     INTAKE_SYSTEM_PROMPT,
@@ -29,6 +30,7 @@ class PromptRegistry(str, Enum):
     deck_financials = PITCH_DECK_FINANCIALS_AND_ASK_INSTRUCTION
     deck_competitor = PITCH_DECK_COMPETITORS_AND_DD_INSTRUCTION
     deck_summary = PITCH_DECK_SLIDE_SUMMARIES_INSTRUCTION
+    deck_query = QUERY_PITCH_DECK_CONTENT
 
     # Agent / Manager Prompts
     intake_system = INTAKE_SYSTEM_PROMPT

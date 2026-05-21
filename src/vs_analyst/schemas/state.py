@@ -20,6 +20,8 @@ from .shared_models import PipelineError
 class AnalysisState(BaseModel):
     run_id: str = Field(..., description="uuid4 run identifier")
     raw_extraction: List[Any] = Field(default=list, description="raw extracted data from the pitch deck")
+    raw_deck_text: Optional[str] = Field(default=None, description="Raw extracted text from the startup pitch deck")
+    raw_website_text: Optional[str] = Field(default=None, description="Raw scraped text from the startup website")
     status: PipelineStatus = Field(default=PipelineStatus.PENDING, description="Overall pipeline status")
     agent_statuses: Optional[Dict[str, AgentStatus]] = Field(default_factory=dict, description="Status map per agent type")
     
@@ -48,7 +50,11 @@ class PipelineGraphState(dict):
       - analysis_state:  The central Pydantic AnalysisState holding all domain
                          data (company, founders, market, competitive, etc.).
                          Written to directly by the orchestrator's mapping node.
+      - raw_deck_text:   Raw extracted text from the pitch deck (in-memory).
+      - raw_website_text: Raw scraped text from the website (in-memory).
     """
 
     messages: Annotated[Sequence[BaseMessage], operator.add]
-    analysis_state: AnalysisState
+    analysis_state: AnalysisState
+    raw_deck_text: Optional[str]
+    raw_website_text: Optional[str]

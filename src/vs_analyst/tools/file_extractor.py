@@ -14,15 +14,7 @@ from vs_analyst.prompts import PromptRegistry
 from vs_analyst.utility.llm import query_vision_model, query_text_model
 from vs_analyst.utility.logs import get_logger
 
-from vs_analyst.schemas.adapters import (
-    CompanyAdaptor,
-    MarketAdaptor,
-    FounderAdaptor,
-    FinanceAdaptor,
-    CompetitorAdaptor,
-    OverviewAdaptor,
-    AdaptorType
-)
+from langgraph.types import Command
 from langchain_core.tools import tool
 
 logger = get_logger(__name__)
@@ -43,7 +35,7 @@ class PDFExtractorOutput(BaseModel):
     page_count: int
     pages: List[ExtractedPage]
     total_chars: int
-    output: Dict[str, Any]
+    output: Dict[str, Any] = {}
 
 
 def _pdf_extractor(file_path: Path, log) -> List[ExtractedPage]:
@@ -189,86 +181,6 @@ def _pptx_extractor(file_path: Path, log) -> List[ExtractedPage]:
             return []
 
 
-async def process_prompt(
-    tag: str,
-    template: str,
-    replacements: Dict[str, Any],
-    response_format: AdaptorType,
-    log
-) -> Tuple[Any, str]:
-    """
-    Builds the template prompt and queries the structured LLM model in a separate thread.
-    """
-    formatted_content = template.format(**replacements)
-    messages = [
-        {"role": "user", "content": formatted_content}
-    ]
-
-    # Run query_structured_model in a separate thread since it is synchronous
-    result = await asyncio.to_thread(query_text_model, messages, response_format, log)
-    return result, tag
-
-
-async def run_parallel_extraction(
-    pages: List[ExtractedPage],
-    log
-) -> Dict[str, Any]:
-    """
-    Runs parallel prompt extractions across all pitch deck pages.
-    """
-    full_text = "\n=========\n".join([f"Page No: {p.page_number}\nContent: {p.text}" for p in pages])
-
-    tasks = [
-        process_prompt(
-            tag="deck_company",
-            template=PromptRegistry.deck_company.value,
-            replacements={"TEXT": full_text},
-            response_format=CompanyAdaptor,
-            log=log
-        ),
-        process_prompt(
-            tag="deck_market",
-            template=PromptRegistry.deck_market.value,
-            replacements={"TEXT": full_text},
-            response_format=MarketAdaptor,
-            log=log
-        ),
-        process_prompt(
-            tag="deck_founders",
-            template=PromptRegistry.deck_founders.value,
-            replacements={"TEXT": full_text},
-            response_format=FounderAdaptor,
-            log=log
-        ),
-        process_prompt(
-            tag="deck_financials",
-            template=PromptRegistry.deck_financials.value,
-            replacements={"TEXT": full_text},
-            response_format=FinanceAdaptor,
-            log=log
-        ),
-        process_prompt(
-            tag="deck_competitor",
-            template=PromptRegistry.deck_competitor.value,
-            replacements={"TEXT": full_text},
-            response_format=CompetitorAdaptor,
-            log=log
-        ),
-        process_prompt(
-            tag="deck_summary",
-            template=PromptRegistry.deck_summary.value,
-            replacements={"TEXT": full_text},
-            response_format=OverviewAdaptor,
-            log=log
-        ),
-    ]
-
-    results = await asyncio.gather(*tasks)
-
-    # Convert results list to a key-value dictionary
-    return {tag: result for result, tag in results}
-
-
 def _file_path_validation(file_path: Path, log) -> None:
     """
     Validates that the file exists and is of a supported type (.pdf or .pptx).
@@ -317,30 +229,25 @@ async def file_extractor(file_path: Path, run_id: str, log) -> PDFExtractorOutpu
         total_chars=total_chars,
     )
 
-    processed_output = await run_parallel_extraction(pages, log)
     return PDFExtractorOutput(
         file_path=str(file_path),
         file_type="pdf" if file_extension == ".pdf" else "pptx",
         page_count=page_count,
         pages=pages,
         total_chars=total_chars,
-        output=processed_output
+        output={}
     )
 
 
 # =========================================================
-# LangChain Tool Wrapper
+# LangChain Tool Wrapper (Using Command to update State)
 # =========================================================
 
-
-_extraction_cache: Dict[str, PDFExtractorOutput] = {}
-
 @tool
-async def pdf_extractor_tool(file_path: str, run_id: str) -> str:
+async def pdf_extractor_tool(file_path: str, run_id: str) -> Command:
     """
-    Extracts and analyzes a startup pitch deck (PDF or PPTX file).
-    Returns a page-by-page overview summary for the agent.
-    Use this tool when a pitch deck file path is provided.
+    Extracts raw text content from a startup pitch deck (PDF or PPTX file).
+    Returns a success/failure message to the agent, while natively updating the raw deck text in the state.
 
     Args:
         file_path: Absolute path to the PDF or PPTX pitch deck file.
@@ -351,14 +258,13 @@ async def pdf_extractor_tool(file_path: str, run_id: str) -> str:
 
     result = await file_extractor(Path(file_path), run_id, log)
 
-    # Store the full result in cache — orchestrator mapper reads this
-    _extraction_cache[run_id] = result
+    # Format the extracted pages with page number headers
+    full_text = "\n=========\n".join([f"Page No: {p.page_number}\nContent: {p.text}" for p in result.pages])
 
-    # Return only the deck_summary (page overviews) to the LLM message history
-    # This protects the context window from raw multi-page JSON dumps
-    summary = result.output.get("deck_summary")
-    if summary is None:
-        log.warning("deck_summary missing from extraction output", run_id=run_id)
-        return "{}"
-
-    return summary.model_dump_json()
+    # Safely update the top-level raw_deck_text key in PipelineGraphState
+    return Command(
+        update={
+            "raw_deck_text": full_text
+        },
+        value=f"Successfully extracted text from pitch deck '{Path(file_path).name}' (pages: {result.page_count}, characters: {result.total_chars})."
+    )

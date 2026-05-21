@@ -210,3 +210,12 @@ PITCH_DECK_SLIDE_SUMMARIES_INSTRUCTION = """
     Deck content:
     {TEXT}
 """
+
+QUERY_PITCH_DECK_CONTENT = """
+    You are an expert VC Analyst. Answer the user's question as accurately and concisely as possible
+    using ONLY the extracted pitch deck text below.
+    If the information is not in the text, respond with 'The pitch deck does not mention this detail.
+
+    Pitch Deck Text:
+    {TEXT}
+"""
