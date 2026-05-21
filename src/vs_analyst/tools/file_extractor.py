@@ -1,6 +1,5 @@
 import asyncio
 import base64
-import re
 import tempfile
 import subprocess
 import os
@@ -12,8 +11,7 @@ import fitz
 from pydantic import BaseModel
 
 from vs_analyst.prompts import PromptRegistry
-from vs_analyst.utility.llm import query_vision_model
-from vs_analyst.utility.structured_llm import query_structured_model
+from vs_analyst.utility.llm import query_vision_model, query_text_model
 from vs_analyst.utility.logs import get_logger
 
 from vs_analyst.schemas.adapters import (
@@ -25,6 +23,7 @@ from vs_analyst.schemas.adapters import (
     OverviewAdaptor,
     AdaptorType
 )
+from langchain_core.tools import tool
 
 logger = get_logger(__name__)
 
@@ -206,7 +205,7 @@ async def process_prompt(
     ]
 
     # Run query_structured_model in a separate thread since it is synchronous
-    result = await asyncio.to_thread(query_structured_model, messages, response_format, log)
+    result = await asyncio.to_thread(query_text_model, messages, response_format, log)
     return result, tag
 
 
@@ -327,3 +326,39 @@ async def file_extractor(file_path: Path, run_id: str, log) -> PDFExtractorOutpu
         total_chars=total_chars,
         output=processed_output
     )
+
+
+# =========================================================
+# LangChain Tool Wrapper
+# =========================================================
+
+
+_extraction_cache: Dict[str, PDFExtractorOutput] = {}
+
+@tool
+async def pdf_extractor_tool(file_path: str, run_id: str) -> str:
+    """
+    Extracts and analyzes a startup pitch deck (PDF or PPTX file).
+    Returns a page-by-page overview summary for the agent.
+    Use this tool when a pitch deck file path is provided.
+
+    Args:
+        file_path: Absolute path to the PDF or PPTX pitch deck file.
+        run_id: The unique run identifier for this pipeline execution.
+    """
+    log = get_logger("pdf_extractor_tool")
+    log.info("pdf_extractor_tool invoked", file_path=file_path, run_id=run_id)
+
+    result = await file_extractor(Path(file_path), run_id, log)
+
+    # Store the full result in cache — orchestrator mapper reads this
+    _extraction_cache[run_id] = result
+
+    # Return only the deck_summary (page overviews) to the LLM message history
+    # This protects the context window from raw multi-page JSON dumps
+    summary = result.output.get("deck_summary")
+    if summary is None:
+        log.warning("deck_summary missing from extraction output", run_id=run_id)
+        return "{}"
+
+    return summary.model_dump_json()
