@@ -10,7 +10,7 @@ PITCH_DECK_CORE_COMPANY_INSTRUCTION = """
     3. The unique value proposition.
     4. The business model (B2B, B2C, B2B2C, marketplace, etc.) and primary sector/industry.
     5. The geographical market coverage.
-    6. Current product stage (MVP, beta, GA, etc.) and employee count.
+    6. Current product stage (MVP, beta, GA, etc.).
 
     Output Formate:
     ```json
