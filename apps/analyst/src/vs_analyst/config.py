@@ -47,12 +47,12 @@ class ImageVLMConfig(BaseSettings):
     stream: bool = Field(default=True, alias="MODEL_OUTPUT_STREAM")
 
 
-class ObjectDBConfig(BaseSettings):
-    aws_access_key_id: str | None = Field(default=None, alias="AWS_ACCESS_KEY")
-    aws_secret_access_key: SecretStr | None = Field(default=None, alias="AWS_SECRET_KEY")
-    endpoint_url: str | None = Field(default=None, alias="OBJECT_DB_ENDPOINT")
-    region_name: str = Field(default="us-east-1",alias="OBJECTDB_REGION")
-    bucket_name: str | None = Field(default=None, alias="OBJECTDB_BUCKET")
+class StorageConfig(BaseSettings):
+    access_key: str = Field(..., alias="STORAGE_ACCESS_KEY")
+    secret_key: SecretStr = Field(..., alias="STORAGE_SECRET_KEY")
+    endpoint_url: str = Field(..., alias="STORAGE_ENDPOINT")
+    region_name: str = Field(default="us-east-1", alias="STORAGE_REGION")
+    bucket_name: str = Field(..., alias="STORAGE_BUCKET")
 
 class Settings(BaseSettings):
     """
@@ -70,10 +70,11 @@ class Settings(BaseSettings):
     app_name: str = Field(default="AI Platform", alias="APP_NAME")
     environment: Literal["local", "dev", "staging", "prod"] = Field(default="local", alias="DEPLOYMENT_ENVIRONMENT_TYPE")
     debug: bool = Field(default=True, alias="DEBUGGING")
+    backend_callback_url: HttpUrl | None = Field(default=None, alias="BACKEND_CALLBACK_URL")
 
     llm: TextLLMConfig = TextLLMConfig()
     vlm: ImageVLMConfig = ImageVLMConfig()
-    Object_db: ObjectDBConfig = ObjectDBConfig()
+    storage_config: StorageConfig = StorageConfig()
 
 
 @lru_cache
@@ -82,6 +83,5 @@ def get_settings() -> Settings:
     Cached settings instance
     """
     return Settings()
-
 
 settings = get_settings()
