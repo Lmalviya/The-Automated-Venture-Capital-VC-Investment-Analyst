@@ -1,0 +1,76 @@
+services:
+  minio:
+    image: minio/minio:latest
+    container_name: vc-minio
+    ports:
+      - "9000:9000" # S3 API endpoint
+      - "9001:9001" # S3 Web Console
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadminpassword
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - vc-analyst-network
+
+  ui:
+    build:
+      context: ./apps/ui
+      dockerfile: Dockerfile
+    container_name: vc-ui
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - vc-analyst-network
+
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    container_name: vc-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - S3_ENDPOINT_URL=http://minio:9000
+      - S3_ENDPOINT_URL_EXTERNAL=http://localhost:9000
+      - S3_ACCESS_KEY=minioadmin
+      - S3_SECRET_KEY=minioadminpassword
+      - S3_BUCKET_NAME=vc-analyst-decks
+      - ANALYST_SERVICE_URL=http://analyst:8001
+    depends_on:
+      - minio
+    networks:
+      - vc-analyst-network
+
+  analyst:
+    build:
+      context: ./apps/analyst
+      dockerfile: Dockerfile
+    container_name: vc-analyst
+    ports:
+      - "8001:8001"
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - S3_ENDPOINT_URL=http://minio:9000
+      - S3_ACCESS_KEY=minioadmin
+      - S3_SECRET_KEY=minioadminpassword
+      - S3_BUCKET_NAME=vc-analyst-decks
+    depends_on:
+      - minio
+    networks:
+      - vc-analyst-network
+
+volumes:
+  minio_data:
+
+networks:
+  vc-analyst-network:
+    driver: bridge

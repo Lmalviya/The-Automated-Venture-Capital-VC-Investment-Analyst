@@ -17,10 +17,6 @@ from vs_analyst.utility.logs import get_logger
 
 logger = get_logger(__name__)
 
-# =========================================================
-# Parallel Extraction Nodes (Step 4)
-# =========================================================
-
 async def extract_company_node(state: PipelineGraphState) -> Dict[str, Any]:
     """
     Extracts core company information from raw text and maps to state.company.

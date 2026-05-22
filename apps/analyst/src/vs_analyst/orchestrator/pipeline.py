@@ -1,5 +1,4 @@
-from typing import Any, Dict, List, Union
-import operator
+from typing import List, Union
 
 from langgraph.graph import END, StateGraph
 from langgraph.prebuilt import ToolNode
@@ -27,16 +26,10 @@ from vs_analyst.utility.logs import get_logger
 
 logger = get_logger(__name__)
 
-# =========================================================
-# Tool Nodes (separate per agent for clean isolation)
-# =========================================================
+# Tool Nodes
 intake_tools_node = ToolNode(IntakeManager.tools)
 market_tools_node = ToolNode(MarketManager.tools)
 
-
-# =========================================================
-# State-Driven Workflow Router (Step 6)
-# =========================================================
 
 def route_from_router(state: PipelineGraphState) -> Union[List[str], str]:
     """
@@ -143,7 +136,7 @@ pipeline = workflow.compile()
 
 
 # =========================================================
-# Public Entrypoint
+#  Entrypoint
 # =========================================================
 
 async def run_pipeline(analysis_state: AnalysisState) -> AnalysisState:
