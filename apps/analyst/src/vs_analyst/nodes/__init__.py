@@ -3,6 +3,7 @@ from vs_analyst.nodes.coordinator import (
     map_market_complete_node,
 )
 from vs_analyst.nodes.deck_extraction import (
+    intake_extraction_node,
     extract_company_node,
     extract_market_node,
     extract_founders_node,
@@ -16,6 +17,7 @@ from vs_analyst.nodes.summary import (
 __all__ = [
     "state_router_node",
     "map_market_complete_node",
+    "intake_extraction_node",
     "extract_company_node",
     "extract_market_node",
     "extract_founders_node",

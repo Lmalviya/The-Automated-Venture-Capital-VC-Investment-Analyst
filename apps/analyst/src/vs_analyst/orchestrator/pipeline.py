@@ -12,6 +12,17 @@ from vs_analyst.prompts import PromptRegistry
 from vs_analyst.schemas.shared_enums import AgentStatus
 from vs_analyst.schemas.state import AnalysisState, PipelineGraphState
 from vs_analyst.utility.logs import get_logger
+from vs_analyst.nodes import (
+    state_router_node,
+    intake_extraction_node,
+    extract_company_node,
+    extract_market_node,
+    extract_founders_node,
+    extract_financials_node,
+    extract_competitors_node,
+    generate_summary_node,
+    map_market_complete_node,
+)
 
 logger = get_logger(__name__)
 
@@ -75,9 +86,21 @@ def route_from_router(state: PipelineGraphState) -> Union[List[str], str]:
     analysis = state["analysis_state"]
     raw_text = state.get("raw_deck_text")
 
-    # 1. If basic raw text is missing, we must direct flow to the Intake Agent
+    # 1. If basic raw deck text is missing, we must direct flow to the Intake Extraction node
     if not raw_text:
-        return "intake_agent"
+        return "intake_extraction"
+
+    # If website URL is provided but website text is missing, run intake agent for scraping
+    if (
+        analysis.user_input.website_url
+        and not state.get("raw_website_text")
+        and analysis.agent_statuses.get("intake") != AgentStatus.COMPLETE
+    ):
+        # Prevent looping: if we already ran the intake agent and it finished (no tool calls left), pass to extraction
+        if state.get("messages") and not getattr(state["messages"][-1], "tool_calls", None):
+            pass
+        else:
+            return "intake_agent"
 
     # 2. If raw text is extracted, but the intake phase has not been structured/completed
     if analysis.agent_statuses.get("intake") != AgentStatus.COMPLETE:
@@ -106,6 +129,7 @@ workflow = StateGraph(PipelineGraphState)
 
 # Define Nodes
 workflow.add_node("state_router", state_router_node)
+workflow.add_node("intake_extraction", intake_extraction_node)
 workflow.add_node("intake_agent", intake_agent_node)
 workflow.add_node("intake_tools", intake_tools_node)
 
@@ -129,6 +153,7 @@ workflow.add_conditional_edges(
     "state_router",
     route_from_router,
     {
+        "intake_extraction": "intake_extraction",
         "intake_agent": "intake_agent",
         "extract_company": "extract_company",
         "extract_market": "extract_market",
@@ -139,6 +164,9 @@ workflow.add_conditional_edges(
         "__end__": END
     }
 )
+
+# Wire intake_extraction directly to state_router
+workflow.add_edge("intake_extraction", "state_router")
 
 # Intake agent routing
 workflow.add_conditional_edges(

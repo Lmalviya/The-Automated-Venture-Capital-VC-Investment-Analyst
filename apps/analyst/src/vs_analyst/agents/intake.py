@@ -1,10 +1,8 @@
 from vs_analyst.utility.llm import llm
-from vs_analyst.tools.file_extractor import pdf_extractor_tool
 from vs_analyst.tools.website_scraper import website_scraper_tool
 
 # List of tools assigned to the Intake Agent
 INTAKE_TOOLS = [
-    pdf_extractor_tool,
     website_scraper_tool,
 ]
 

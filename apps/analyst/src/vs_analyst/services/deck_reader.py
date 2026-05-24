@@ -11,11 +11,8 @@ import fitz
 from pydantic import BaseModel
 
 from vs_analyst.prompts import PromptRegistry
-from vs_analyst.utility.llm import query_vision_model, query_text_model
+from vs_analyst.utility.llm import query_vision_model
 from vs_analyst.utility.logs import get_logger
-
-from langgraph.types import Command
-from langchain_core.tools import tool
 
 logger = get_logger(__name__)
 
@@ -236,35 +233,4 @@ async def file_extractor(file_path: Path, run_id: str, log) -> PDFExtractorOutpu
         pages=pages,
         total_chars=total_chars,
         output={}
-    )
-
-
-# =========================================================
-# LangChain Tool Wrapper (Using Command to update State)
-# =========================================================
-
-@tool
-async def pdf_extractor_tool(file_path: str, run_id: str) -> Command:
-    """
-    Extracts raw text content from a startup pitch deck (PDF or PPTX file).
-    Returns a success/failure message to the agent, while natively updating the raw deck text in the state.
-
-    Args:
-        file_path: Absolute path to the PDF or PPTX pitch deck file.
-        run_id: The unique run identifier for this pipeline execution.
-    """
-    log = get_logger("pdf_extractor_tool")
-    log.info("pdf_extractor_tool invoked", file_path=file_path, run_id=run_id)
-
-    result = await file_extractor(Path(file_path), run_id, log)
-
-    # Format the extracted pages with page number headers
-    full_text = "\n=========\n".join([f"Page No: {p.page_number}\nContent: {p.text}" for p in result.pages])
-
-    # Safely update the top-level raw_deck_text key in PipelineGraphState
-    return Command(
-        update={
-            "raw_deck_text": full_text
-        },
-        value=f"Successfully extracted text from pitch deck '{Path(file_path).name}' (pages: {result.page_count}, characters: {result.total_chars})."
     )

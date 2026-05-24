@@ -1,6 +1,22 @@
 from typing import Any, Dict
+from pathlib import Path
 from vs_analyst.schemas.state import PipelineGraphState
 from vs_analyst.schemas.shared_enums import AgentStatus
+from vs_analyst.services.deck_reader import file_extractor
+
+async def intake_extraction_node(state: PipelineGraphState) -> Dict[str, Any]:
+    """
+    Intake phase node. Reads pitch deck from disk via services.deck_reader.
+    Writes raw_deck_text directly to state. No LLM call — pure Python service.
+    """
+    analysis_state = state["analysis_state"]
+    file_path = Path(analysis_state.user_input.pitch_deck_path)
+    result = await file_extractor(file_path, analysis_state.run_id, logger)
+    full_text = "\n=========\n".join(
+        [f"Page No: {p.page_number}\nContent: {p.text}" for p in result.pages]
+    )
+    return {"raw_deck_text": full_text}
+
 
 from vs_analyst.schemas.competitive import CompetitorSchema
 from vs_analyst.schemas.founder import Education, FounderSchema
