@@ -62,7 +62,9 @@ def parse_numeric_value(value_string: str) -> float:
     Args:
         value_string: A human-readable financial string (e.g., '$4B', '₹800Cr', '€1.2M', '500k').
     """
-    logger.info("parse_numeric_value tool invoked", value_string=value_string)
+    # Safe-encode value_string to ASCII backslashreplace to prevent CP1252 console logging crashes on Windows
+    safe_value_string = value_string.encode('ascii', 'backslashreplace').decode('ascii')
+    logger.info("parse_numeric_value tool invoked", value_string=safe_value_string)
     s = value_string.strip()
     if not s:
         return 0.0
@@ -112,7 +114,7 @@ def parse_numeric_value(value_string: str) -> float:
         val = float(s)
         return val * rate * multiplier
     except ValueError:
-        logger.warning("Unparseable financial or numeric string", value_string=value_string)
+        logger.warning("Unparseable financial or numeric string", value_string=safe_value_string)
         return 0.0
 
 
