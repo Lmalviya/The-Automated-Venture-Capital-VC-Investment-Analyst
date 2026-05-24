@@ -164,6 +164,13 @@ class CompetitiveRiskAdaptor(BaseModel):
     top_risks: List[str] = Field(default_factory=list, description="3-5 structured risk statements")
     risk_severity: Literal["CRITICAL", "HIGH", "MODERATE", "LOW"] = Field(..., description="Overall competitive risk rating")
 
+class DueDiligenceAdaptor(BaseModel):
+    traction_claims: List[str] = Field(default_factory=list, description="Claims about user metrics, revenue, MRR, ARR, growth, or customer counts")
+    press_claims: List[str] = Field(default_factory=list, description="Stated press coverage, feature articles, or major media mentions")
+    patents: List[str] = Field(default_factory=list, description="Claimed patents, patent applications, or proprietary IP filings")
+    regulatory_flags: List[str] = Field(default_factory=list, description="Operating requirements, regulatory compliance standards, or critical certifications")
+    legal_notes: List[str] = Field(default_factory=list, description="References to lawsuits, litigations, or active legal disputes")
+
 AdaptorType = Union[
     CompanyAdaptor,
     MarketAdaptor,
@@ -181,4 +188,5 @@ AdaptorType = Union[
     InvestigatorQueryGoal,
     CompetitorInvestigatorDecision,
     CompetitiveRiskAdaptor,
+    DueDiligenceAdaptor,
 ]

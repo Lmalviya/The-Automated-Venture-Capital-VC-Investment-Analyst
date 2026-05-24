@@ -28,6 +28,17 @@ from .competitor_prompts import (
     COMPETITOR_INVESTIGATOR_SYNTHESIZER_SYSTEM_PROMPT,
     COMPETITIVE_RISK_ANALYST_SYSTEM_PROMPT,
 )
+from .founder_prompts import (
+    FOUNDER_PROFILER_SYSTEM_PROMPT,
+    FOUNDER_RISK_ANALYST_SYSTEM_PROMPT,
+)
+from .due_diligence_prompts import (
+    DD_EXTRACTOR_SYSTEM_PROMPT,
+    DD_LEGAL_VERIFIER_SYSTEM_PROMPT,
+    DD_TRACTION_VERIFIER_SYSTEM_PROMPT,
+    DD_PRESS_VERIFIER_SYSTEM_PROMPT,
+    DD_SYNTHESIZER_SYSTEM_PROMPT,
+)
 
 class PromptRegistry(str, Enum):
     """
@@ -56,3 +67,10 @@ class PromptRegistry(str, Enum):
     competitor_investigator_planner_system = COMPETITOR_INVESTIGATOR_PLANNER_SYSTEM_PROMPT
     competitor_investigator_synthesizer_system = COMPETITOR_INVESTIGATOR_SYNTHESIZER_SYSTEM_PROMPT
     competitive_risk_analyst_system = COMPETITIVE_RISK_ANALYST_SYSTEM_PROMPT
+    founder_profiler_system = FOUNDER_PROFILER_SYSTEM_PROMPT
+    founder_risk_analyst_system = FOUNDER_RISK_ANALYST_SYSTEM_PROMPT
+    dd_extractor_system = DD_EXTRACTOR_SYSTEM_PROMPT
+    dd_legal_verifier_system = DD_LEGAL_VERIFIER_SYSTEM_PROMPT
+    dd_traction_verifier_system = DD_TRACTION_VERIFIER_SYSTEM_PROMPT
+    dd_press_verifier_system = DD_PRESS_VERIFIER_SYSTEM_PROMPT
+    dd_synthesizer_system = DD_SYNTHESIZER_SYSTEM_PROMPT

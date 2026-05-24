@@ -11,6 +11,17 @@ from .competitor import (
     competitor_investigator_synthesizer_agent, COMPETITOR_INVESTIGATOR_SYNTHESIZER_TOOLS,
     competitive_risk_analyst_agent, COMPETITIVE_RISK_ANALYST_TOOLS,
 )
+from .founder import (
+    founder_profiler_agent, FOUNDER_PROFILER_TOOLS,
+    founder_risk_analyst_agent, FOUNDER_RISK_ANALYST_TOOLS,
+)
+from .due_diligence import (
+    dd_extractor_agent, DD_EXTRACTOR_TOOLS,
+    dd_legal_verifier_agent, DD_LEGAL_VERIFIER_TOOLS,
+    dd_traction_verifier_agent, DD_TRACTION_VERIFIER_TOOLS,
+    dd_press_verifier_agent, DD_PRESS_VERIFIER_TOOLS,
+    dd_synthesizer_agent, DD_SYNTHESIZER_TOOLS,
+)
 
 class AgentRegistry:
     """
@@ -29,3 +40,14 @@ class AgentRegistry:
     competitor_investigator_planner = competitor_investigator_planner_agent
     competitor_investigator_synthesizer = competitor_investigator_synthesizer_agent
     competitive_risk_analyst = competitive_risk_analyst_agent
+    
+    # Founder agents
+    founder_profiler = founder_profiler_agent
+    founder_risk_analyst = founder_risk_analyst_agent
+    
+    # Due Diligence agents
+    dd_extractor = dd_extractor_agent
+    dd_legal_verifier = dd_legal_verifier_agent
+    dd_traction_verifier = dd_traction_verifier_agent
+    dd_press_verifier = dd_press_verifier_agent
+    dd_synthesizer = dd_synthesizer_agent

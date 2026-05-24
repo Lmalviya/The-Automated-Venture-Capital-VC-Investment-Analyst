@@ -93,6 +93,93 @@ def merge_competitors_reducer(current: List[CompetitorSchema], updates: List[Com
     return list(competitor_map.values())
 
 
+def merge_founder_records(current: FounderSchema, update: FounderSchema) -> FounderSchema:
+    """
+    In-place merges fields from update founder into current founder.
+    """
+    for field in [
+        "role", "linkedin_url", "linkedin_summary", "verified_background", "github_url",
+        "github_public_repos", "github_account_age", "github_active"
+    ]:
+        val = getattr(update, field, None)
+        if val is not None and val != "":
+            setattr(current, field, val)
+
+    # Merge bio_from_deck (only if current doesn't have it)
+    if not current.bio_from_deck and update.bio_from_deck:
+        current.bio_from_deck = update.bio_from_deck
+
+    # Merge simple lists
+    for item in update.past_companies:
+        if item not in current.past_companies:
+            current.past_companies.append(item)
+            
+    for item in update.past_roles:
+        if item not in current.past_roles:
+            current.past_roles.append(item)
+            
+    if update.notable_achievements:
+        if not current.notable_achievements:
+            current.notable_achievements = update.notable_achievements
+        else:
+            for item in update.notable_achievements:
+                if item not in current.notable_achievements:
+                    current.notable_achievements.append(item)
+
+    if update.red_flags:
+        if not current.red_flags:
+            current.red_flags = update.red_flags
+        else:
+            for item in update.red_flags:
+                if item not in current.red_flags:
+                    current.red_flags.append(item)
+
+    # Github list fields
+    for item in update.github_languages:
+        if item not in current.github_languages:
+            current.github_languages.append(item)
+    for item in update.github_oss_notable:
+        if item not in current.github_oss_notable:
+            current.github_oss_notable.append(item)
+
+    # Merge education sub-models list without duplicates based on collage/level/branch
+    if update.education:
+        if not current.education:
+            current.education = update.education
+        else:
+            existing_edu = {
+                (e.collage.lower() if e.collage else "", 
+                 e.level.lower() if e.level else "", 
+                 e.branch.lower() if e.branch else "") 
+                for e in current.education
+            }
+            for e in update.education:
+                key = (
+                    e.collage.lower() if e.collage else "", 
+                    e.level.lower() if e.level else "", 
+                    e.branch.lower() if e.branch else ""
+                )
+                if key not in existing_edu:
+                    current.education.append(e)
+                    existing_edu.add(key)
+
+    return current
+
+
+def merge_founders_reducer(current: List[FounderSchema], updates: List[FounderSchema]) -> List[FounderSchema]:
+    """
+    Merges updates into the current list of founders without duplication based on founder name.
+    """
+    founder_map = {f.name.lower(): f for f in current}
+    for updated_founder in updates:
+        key = updated_founder.name.lower()
+        if key in founder_map:
+            founder_map[key] = merge_founder_records(founder_map[key], updated_founder)
+        else:
+            founder_map[key] = updated_founder
+    return list(founder_map.values())
+
+
 def reduce_analysis_state(left: AnalysisState, right: AnalysisState) -> AnalysisState:
     """
     State reducer for parallel graph updates.
@@ -134,8 +221,99 @@ def reduce_analysis_state(left: AnalysisState, right: AnalysisState) -> Analysis
         left.company = right.company
         
     if right.founders:
-        left.founders = right.founders
+        left.founders = merge_founders_reducer(left.founders, right.founders)
         
+    if right.due_diligence:
+        # Merge regulatory_flags
+        for item in right.due_diligence.regulatory_flags:
+            if item not in left.due_diligence.regulatory_flags:
+                left.due_diligence.regulatory_flags.append(item)
+                
+        # Merge patent_mentions
+        for item in right.due_diligence.patent_mentions:
+            if item not in left.due_diligence.patent_mentions:
+                left.due_diligence.patent_mentions.append(item)
+                
+        # Merge legal_notes
+        for item in right.due_diligence.legal_notes:
+            if item not in left.due_diligence.legal_notes:
+                left.due_diligence.legal_notes.append(item)
+                
+        # Merge red_flags
+        for item in right.due_diligence.red_flags:
+            if item not in left.due_diligence.red_flags:
+                left.due_diligence.red_flags.append(item)
+                
+        # Merge queries_used
+        for item in right.due_diligence.queries_used:
+            if item not in left.due_diligence.queries_used:
+                left.due_diligence.queries_used.append(item)
+                
+        # Merge research_sources
+        existing_sources = {src.url for src in left.due_diligence.research_sources if src.url}
+        for src in right.due_diligence.research_sources:
+            if src.url and src.url not in existing_sources:
+                left.due_diligence.research_sources.append(src)
+                existing_sources.add(src.url)
+                
+        # Merge press_mentions
+        existing_press = {m.title.lower() for m in left.due_diligence.press_mentions if m.title}
+        for p in right.due_diligence.press_mentions:
+            if p.title and p.title.lower() not in existing_press:
+                left.due_diligence.press_mentions.append(p)
+                existing_press.add(p.title.lower())
+            elif p.title:
+                # Update existing press details if they are filled in right and empty in left
+                for existing_p in left.due_diligence.press_mentions:
+                    if existing_p.title and existing_p.title.lower() == p.title.lower():
+                        if not existing_p.url and p.url:
+                            existing_p.url = p.url
+                        if not existing_p.source and p.source:
+                            existing_p.source = p.source
+                        if not existing_p.date and p.date:
+                            existing_p.date = p.date
+                        if not existing_p.sentiment and p.sentiment:
+                            existing_p.sentiment = p.sentiment
+                        if not existing_p.snippet and p.snippet:
+                            existing_p.snippet = p.snippet
+
+        # Merge traction_checks
+        existing_checks = {c.claim.lower() for c in left.due_diligence.traction_checks if c.claim}
+        for c in right.due_diligence.traction_checks:
+            if c.claim and c.claim.lower() not in existing_checks:
+                left.due_diligence.traction_checks.append(c)
+                existing_checks.add(c.claim.lower())
+            elif c.claim:
+                for existing_c in left.due_diligence.traction_checks:
+                    if existing_c.claim and existing_c.claim.lower() == c.claim.lower():
+                        if existing_c.verified is None and c.verified is not None:
+                            existing_c.verified = c.verified
+                        if not existing_c.evidence and c.evidence:
+                            existing_c.evidence = c.evidence
+                        if not existing_c.source_url and c.source_url:
+                            existing_c.source_url = c.source_url
+                            
+        # Merge summaries
+        if right.due_diligence.press_summary:
+            left.due_diligence.press_summary = right.due_diligence.press_summary
+        if right.due_diligence.summary:
+            left.due_diligence.summary = right.due_diligence.summary
+
+        # Merge Github org details if updated
+        if right.due_diligence.github:
+            for field in [
+                "org_url", "total_repos", "primary_language", "stars_primary_repo",
+                "contributor_count", "commits_last_90d", "open_issues", "closed_issues",
+                "last_commit_date", "license_type", "fetch_status"
+            ]:
+                val = getattr(right.due_diligence.github, field, None)
+                if val is not None and val != "" and val != "pending" and val != DDStatus.PENDING:
+                    setattr(left.due_diligence.github, field, val)
+            if right.due_diligence.github.fetch_notes:
+                for note in right.due_diligence.github.fetch_notes:
+                    if note not in left.due_diligence.github.fetch_notes:
+                        left.due_diligence.github.fetch_notes.append(note)
+
     if right.agent_statuses:
         left.agent_statuses.update(right.agent_statuses)
         

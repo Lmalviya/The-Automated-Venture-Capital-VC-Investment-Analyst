@@ -24,6 +24,17 @@ from vs_analyst.nodes.competitor import (
     competitor_investigator_synthesizer_node,
     competitive_risk_analyst_node,
 )
+from vs_analyst.nodes.founder import (
+    founder_profiler_node,
+    founder_risk_analyst_node,
+)
+from vs_analyst.nodes.due_diligence import (
+    dd_extractor_node,
+    dd_legal_verifier_node,
+    dd_traction_verifier_node,
+    dd_press_verifier_node,
+    dd_synthesizer_node,
+)
 
 __all__ = [
     "state_router_node",
@@ -42,4 +53,11 @@ __all__ = [
     "competitor_investigator_planner_node",
     "competitor_investigator_synthesizer_node",
     "competitive_risk_analyst_node",
+    "founder_profiler_node",
+    "founder_risk_analyst_node",
+    "dd_extractor_node",
+    "dd_legal_verifier_node",
+    "dd_traction_verifier_node",
+    "dd_press_verifier_node",
+    "dd_synthesizer_node",
 ]

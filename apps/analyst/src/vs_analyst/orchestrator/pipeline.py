@@ -23,6 +23,8 @@ from vs_analyst.nodes import (
 )
 from vs_analyst.orchestrator.subgraphs.market_subgraph import market_subgraph
 from vs_analyst.orchestrator.subgraphs.competitor_subgraph import competitor_subgraph
+from vs_analyst.orchestrator.subgraphs.founder_subgraph import founder_subgraph
+from vs_analyst.orchestrator.subgraphs.due_diligence_subgraph import due_diligence_subgraph
 
 logger = get_logger(__name__)
 
@@ -90,12 +92,16 @@ def route_from_router(state: PipelineGraphState) -> Union[List[str], str]:
             "extract_competitors"
         ]
 
-    # 3. If intake is complete, but market or competitor research has not started/completed
+    # 3. If intake is complete, but market, competitor, founder, or due-diligence research has not started/completed
     next_nodes = []
     if analysis.agent_statuses.get("market") != AgentStatus.COMPLETE:
         next_nodes.append("market_subgraph")
     if analysis.agent_statuses.get("competitive") != AgentStatus.COMPLETE:
         next_nodes.append("competitor_subgraph")
+    if analysis.agent_statuses.get("founder") != AgentStatus.COMPLETE:
+        next_nodes.append("founder_subgraph")
+    if analysis.agent_statuses.get("due_diligence") != AgentStatus.COMPLETE:
+        next_nodes.append("due_diligence_subgraph")
 
     if next_nodes:
         return next_nodes
@@ -130,6 +136,12 @@ workflow.add_node("market_subgraph", market_subgraph)
 # Competitor Subgraph node
 workflow.add_node("competitor_subgraph", competitor_subgraph)
 
+# Founder Subgraph node
+workflow.add_node("founder_subgraph", founder_subgraph)
+
+# Due Diligence Subgraph node
+workflow.add_node("due_diligence_subgraph", due_diligence_subgraph)
+
 # Entry point starts at the state coordinator router
 workflow.set_entry_point("state_router")
 
@@ -147,6 +159,8 @@ workflow.add_conditional_edges(
         "extract_competitors": "extract_competitors",
         "market_subgraph": "market_subgraph",
         "competitor_subgraph": "competitor_subgraph",
+        "founder_subgraph": "founder_subgraph",
+        "due_diligence_subgraph": "due_diligence_subgraph",
         "__end__": END
     }
 )
@@ -177,6 +191,12 @@ workflow.add_edge("market_subgraph", "state_router")
 
 # Competitor subgraph transition back to coordinator router
 workflow.add_edge("competitor_subgraph", "state_router")
+
+# Founder subgraph transition back to coordinator router
+workflow.add_edge("founder_subgraph", "state_router")
+
+# Due Diligence subgraph transition back to coordinator router
+workflow.add_edge("due_diligence_subgraph", "state_router")
 
 # Compile
 pipeline = workflow.compile()
