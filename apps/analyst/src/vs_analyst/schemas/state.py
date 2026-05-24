@@ -30,28 +30,30 @@ class AnalysisState(BaseModel):
     completed_at: Optional[datetime] = Field(default=None, description="Timestamp of when the run completed")
 
     user_input: UserInputSchema = Field(description="Initial user settings and deck path")
-    company: CompanySchema = Field(default_factory=CompanySchema, description="Company traction, sector, and red flags")
-    founders: List[FounderSchema] = Field(default_factory=list, description="Founder backgrounds and personal verification status")
-    market: MarketSchema = Field(default_factory=MarketSchema, description="Market size estimates (TAM/SAM/SOM) and dynamics")
-    competitive: CompetitiveSchema = Field(default_factory=CompetitiveSchema, description="Competitors and overall competitive positioning")
-    due_diligence: DueDiligenceSchema = Field(default_factory=DueDiligenceSchema, description="Due diligence, org GitHub stats, and press mentions")
-    memo: MemoSchema = Field(default_factory=MemoSchema, description="Venture investment recommendation memo")
+    company: CompanySchema = Field(default_factory=CompanySchema, description="Company profile: sector, business model, traction, red flags")
+    founders: List[FounderSchema] = Field(default_factory=list, description="Verified founder backgrounds, education, career history, and personal red flags")
+    market: MarketSchema = Field(default_factory=MarketSchema, description="Verified market sizing (TAM/SAM/SOM), CAGR, trends, and confidence levels")
+    competitive: CompetitiveSchema = Field(default_factory=CompetitiveSchema, description="Competitor profiles, moat assessment, and competitive risk analysis")
+    due_diligence: DueDiligenceSchema = Field(default_factory=DueDiligenceSchema, description="Regulatory/legal signals, traction verifications, press mentions, and org GitHub stats")
+    memo: MemoSchema = Field(default_factory=MemoSchema, description="Investment memo sections, advisory recommendation (verdict/conviction/do/stop lists), SVG diagrams, and compiled PDF paths")
 
 
 class PipelineGraphState(dict):
     """
     The single shared global state for the LangGraph pipeline.
-    Shared across ALL agents (Intake, Market Research, and future agents).
+    Shared across ALL nodes and sub-graphs.
+
+    Architecture:
+      Intake → Company Sub-Graph → [Market, Competitor, Founder, Due-Diligence] (parallel) → Report Sub-Graph
 
     Fields:
-      - messages:        LangGraph conversation history. Uses operator.add
-                         so each agent node appends to the list rather than
-                         replacing it. Only light summaries go here (token safety).
-      - analysis_state:  The central Pydantic AnalysisState holding all domain
-                         data (company, founders, market, competitive, etc.).
-                         Written to directly by the orchestrator's mapping node.
-      - raw_deck_text:   Raw extracted text from the pitch deck (in-memory).
-      - raw_website_text: Raw scraped text from the website (in-memory).
+      - messages:          LangGraph conversation history. Uses operator.add
+                           so each node appends rather than replacing.
+      - analysis_state:    The central Pydantic AnalysisState holding all domain
+                           data (company, founders, market, competitive, due_diligence, memo).
+                           Each sub-graph writes strictly to its own namespace.
+      - raw_deck_text:     Raw extracted text from the pitch deck (in-memory).
+      - raw_website_text:  Raw scraped text from the website (in-memory).
     """
 
     messages: Annotated[Sequence[BaseMessage], operator.add]

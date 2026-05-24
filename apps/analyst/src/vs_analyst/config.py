@@ -72,6 +72,12 @@ class Settings(BaseSettings):
     debug: bool = Field(default=True, alias="DEBUGGING")
     backend_callback_url: HttpUrl | None = Field(default=None, alias="BACKEND_CALLBACK_URL")
 
+    # Web & Crawling Settings
+    searxng_url: HttpUrl = Field(default="http://localhost:8080", alias="SEARXNG_URL")
+    crawl_depth_limit: int = Field(default=2, alias="CRAWL_DEPTH_LIMIT")
+    crawl_max_pages: int = Field(default=5, alias="CRAWL_MAX_PAGES")
+    market_research_max_attempts: int = Field(default=2, alias="MARKET_RESEARCH_MAX_ATTEMPTS")
+
     llm: TextLLMConfig = TextLLMConfig()
     vlm: ImageVLMConfig = ImageVLMConfig()
     storage_config: StorageConfig = StorageConfig()

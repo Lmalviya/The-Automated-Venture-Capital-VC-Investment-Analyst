@@ -1,34 +1,70 @@
-from typing import List, Union
+from typing import List, Union, Dict, Any
 
+from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.graph import END, StateGraph
 from langgraph.prebuilt import ToolNode
 
-from vs_analyst.managers.intake import IntakeManager, intake_agent_node
-from vs_analyst.managers.market import MarketManager, market_agent_node
-
+from vs_analyst.agents import AgentRegistry
+from vs_analyst.agents.intake import INTAKE_TOOLS
+from vs_analyst.agents.market import MARKET_TOOLS
 from vs_analyst.orchestrator.routing_helper import should_continue
+from vs_analyst.prompts import PromptRegistry
 from vs_analyst.schemas.shared_enums import AgentStatus
 from vs_analyst.schemas.state import AnalysisState, PipelineGraphState
-
-# Decoupled Graph Nodes
-from vs_analyst.nodes import (
-    state_router_node,
-    extract_company_node,
-    extract_market_node,
-    extract_founders_node,
-    extract_financials_node,
-    extract_competitors_node,
-    generate_summary_node,
-    map_market_complete_node
-)
-
 from vs_analyst.utility.logs import get_logger
 
 logger = get_logger(__name__)
 
-# Tool Nodes
-intake_tools_node = ToolNode(IntakeManager.tools)
-market_tools_node = ToolNode(MarketManager.tools)
+# NOTE: managers/ has been DELETED. All agent logic now lives in agents/.
+# If you encounter any import from vs_analyst.managers.* while implementing
+# new nodes or sub-graphs, remove it and use AgentRegistry instead.
+
+
+async def intake_agent_node(state: PipelineGraphState) -> Dict[str, Any]:
+    """Intake agent node. Replaced the deleted managers/intake.py::intake_agent_node."""
+    analysis_state = state["analysis_state"]
+    messages = list(state["messages"])
+    if not messages:
+        logger.info("Intake agent: first turn", run_id=analysis_state.run_id)
+        human_text = PromptRegistry.intake_human.value.format(
+            run_id=analysis_state.run_id,
+            deck_path=analysis_state.user_input.pitch_deck_path,
+            website_url=analysis_state.user_input.website_url or "None provided",
+        )
+        messages = [
+            SystemMessage(content=PromptRegistry.intake_system.value),
+            HumanMessage(content=human_text),
+        ]
+    response = await AgentRegistry.intake.ainvoke(messages)
+    logger.info("Intake agent: LLM responded", run_id=analysis_state.run_id)
+    return {"messages": [response]}
+
+async def market_agent_node(state: PipelineGraphState) -> Dict[str, Any]:
+    """Market agent node. Replaced the deleted managers/market.py::market_agent_node."""
+    analysis_state = state["analysis_state"]
+    messages = list(state["messages"])
+    has_market_system = any(
+        isinstance(m, SystemMessage) and "Market Research Manager" in m.content
+        for m in messages
+    )
+    if not has_market_system:
+        logger.info("Market agent: first turn", run_id=analysis_state.run_id)
+        company_name = analysis_state.company.name or "the startup"
+        sector = analysis_state.company.sector or "the relevant sector"
+        messages = messages + [
+            SystemMessage(content=PromptRegistry.market_system.value),
+            HumanMessage(content=(
+                f"Conduct market research for '{company_name}' "
+                f"operating in '{sector}'.\nRun ID: {analysis_state.run_id}"
+            )),
+        ]
+    response = await AgentRegistry.market.ainvoke(messages)
+    logger.info("Market agent: LLM responded", run_id=analysis_state.run_id)
+    return {"messages": [response]}
+
+# ── Tool Nodes ─────────────────────────────────────────────────────────────────
+intake_tools_node = ToolNode(INTAKE_TOOLS)
+market_tools_node = ToolNode(MARKET_TOOLS)
 
 
 def route_from_router(state: PipelineGraphState) -> Union[List[str], str]:

@@ -31,14 +31,12 @@ class FounderSchema(BaseModel):
     past_companies: List[str] = Field(default_factory=list, description="List of past companies the founder worked at")
     past_roles: List[str] = Field(default_factory=list, description="List of past roles held by the founder")
     education: Optional[List[Education]] = Field(default=None, description="Educational background of the founder")
-    dd_status: DDStatus = Field(default=DDStatus.PENDING, description="Due diligence verification status")
     linkedin_summary: Optional[str] = Field(default=None, description="LinkedIn profile summary scraped via agent")
     verified_background: Optional[str] = Field(default=None, description="Verified background details")
     notable_achievements: Optional[List[str]] = Field(default=None, description="Notable achievements of the founder")
     
     # things wrong with a specific individual (employment gap, false claim about past role, undisclosed conflict)
     red_flags: Optional[List[str]] = Field(default=None, description="Identified inconsistencies, gaps, or concerns")
-    dd_notes: Optional[List[str]] = Field(default=None, description="Additional due diligence notes and ambiguities flagged")
 
     # ── Personal GitHub signals (DD Manager) ──────────
     github_url          : Optional[HttpUrl] = None
