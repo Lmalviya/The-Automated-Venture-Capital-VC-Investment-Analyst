@@ -21,6 +21,13 @@ from .market_prompts import (
     MARKET_SYNTHESIZER_SYSTEM_PROMPT,
     MARKET_RISK_ANALYST_SYSTEM_PROMPT,
 )
+from .competitor_prompts import (
+    COMPETITOR_FINDER_PLANNER_SYSTEM_PROMPT,
+    COMPETITOR_FINDER_SYNTHESIZER_SYSTEM_PROMPT,
+    COMPETITOR_INVESTIGATOR_PLANNER_SYSTEM_PROMPT,
+    COMPETITOR_INVESTIGATOR_SYNTHESIZER_SYSTEM_PROMPT,
+    COMPETITIVE_RISK_ANALYST_SYSTEM_PROMPT,
+)
 
 class PromptRegistry(str, Enum):
     """
@@ -44,3 +51,8 @@ class PromptRegistry(str, Enum):
     market_planner_system = MARKET_PLANNER_SYSTEM_PROMPT
     market_synthesizer_system = MARKET_SYNTHESIZER_SYSTEM_PROMPT
     market_risk_analyst_system = MARKET_RISK_ANALYST_SYSTEM_PROMPT
+    competitor_finder_planner_system = COMPETITOR_FINDER_PLANNER_SYSTEM_PROMPT
+    competitor_finder_synthesizer_system = COMPETITOR_FINDER_SYNTHESIZER_SYSTEM_PROMPT
+    competitor_investigator_planner_system = COMPETITOR_INVESTIGATOR_PLANNER_SYSTEM_PROMPT
+    competitor_investigator_synthesizer_system = COMPETITOR_INVESTIGATOR_SYNTHESIZER_SYSTEM_PROMPT
+    competitive_risk_analyst_system = COMPETITIVE_RISK_ANALYST_SYSTEM_PROMPT

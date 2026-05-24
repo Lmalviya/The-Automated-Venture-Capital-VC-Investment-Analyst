@@ -41,6 +41,7 @@ class CompetitorSchema(BaseModel):
     # ── Source tracking ───────────────────────────────────
     sources : list[ResearchSource] = [] # reused from shared_models
     profiling_notes : list[str] = [] # agent ambiguities
+    queries_used : list[str] = [] # search queries used for this competitor
 
 
 class CompetitiveSchema(BaseModel):

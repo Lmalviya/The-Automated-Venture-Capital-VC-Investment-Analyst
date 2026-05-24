@@ -17,6 +17,13 @@ from vs_analyst.nodes.market import (
     market_synthesizer_node,
     market_risk_analyst_node,
 )
+from vs_analyst.nodes.competitor import (
+    competitor_finder_planner_node,
+    competitor_finder_synthesizer_node,
+    competitor_investigator_planner_node,
+    competitor_investigator_synthesizer_node,
+    competitive_risk_analyst_node,
+)
 
 __all__ = [
     "state_router_node",
@@ -30,4 +37,9 @@ __all__ = [
     "market_planner_node",
     "market_synthesizer_node",
     "market_risk_analyst_node",
+    "competitor_finder_planner_node",
+    "competitor_finder_synthesizer_node",
+    "competitor_investigator_planner_node",
+    "competitor_investigator_synthesizer_node",
+    "competitive_risk_analyst_node",
 ]

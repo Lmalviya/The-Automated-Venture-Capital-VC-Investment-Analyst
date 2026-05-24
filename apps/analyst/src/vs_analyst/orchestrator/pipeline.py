@@ -22,6 +22,7 @@ from vs_analyst.nodes import (
     generate_summary_node,
 )
 from vs_analyst.orchestrator.subgraphs.market_subgraph import market_subgraph
+from vs_analyst.orchestrator.subgraphs.competitor_subgraph import competitor_subgraph
 
 logger = get_logger(__name__)
 
@@ -89,9 +90,15 @@ def route_from_router(state: PipelineGraphState) -> Union[List[str], str]:
             "extract_competitors"
         ]
 
-    # 3. If intake is complete, but market research has not started/completed
+    # 3. If intake is complete, but market or competitor research has not started/completed
+    next_nodes = []
     if analysis.agent_statuses.get("market") != AgentStatus.COMPLETE:
-        return "market_subgraph"
+        next_nodes.append("market_subgraph")
+    if analysis.agent_statuses.get("competitive") != AgentStatus.COMPLETE:
+        next_nodes.append("competitor_subgraph")
+
+    if next_nodes:
+        return next_nodes
 
     # 4. Everything is complete!
     return END
@@ -120,6 +127,9 @@ workflow.add_node("generate_summary", generate_summary_node)
 # Market Subgraph node
 workflow.add_node("market_subgraph", market_subgraph)
 
+# Competitor Subgraph node
+workflow.add_node("competitor_subgraph", competitor_subgraph)
+
 # Entry point starts at the state coordinator router
 workflow.set_entry_point("state_router")
 
@@ -136,6 +146,7 @@ workflow.add_conditional_edges(
         "extract_financials": "extract_financials",
         "extract_competitors": "extract_competitors",
         "market_subgraph": "market_subgraph",
+        "competitor_subgraph": "competitor_subgraph",
         "__end__": END
     }
 )
@@ -163,6 +174,9 @@ workflow.add_edge("generate_summary", "state_router")
 
 # Market subgraph transition back to coordinator router
 workflow.add_edge("market_subgraph", "state_router")
+
+# Competitor subgraph transition back to coordinator router
+workflow.add_edge("competitor_subgraph", "state_router")
 
 # Compile
 pipeline = workflow.compile()

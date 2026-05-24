@@ -9,7 +9,7 @@ from .company import CompanySchema
 from .user_inputs import UserInputSchema
 from .founder import FounderSchema
 from .market import MarketSchema
-from .competitive import CompetitiveSchema
+from .competitive import CompetitiveSchema, CompetitorSchema
 from .due_diligence import DueDiligenceSchema
 from .memo import MemoSchema
 
@@ -38,13 +38,118 @@ class AnalysisState(BaseModel):
     memo: MemoSchema = Field(default_factory=MemoSchema, description="Investment memo sections, advisory recommendation (verdict/conviction/do/stop lists), SVG diagrams, and compiled PDF paths")
 
 
+def merge_competitor_records(current: CompetitorSchema, update: CompetitorSchema) -> CompetitorSchema:
+    """
+    In-place merges fields from update competitor into current competitor.
+    """
+    for field in [
+        "funding_stage", "funding_amount", "geography", "business_model",
+        "founding_year", "positioning"
+    ]:
+        val = getattr(update, field, None)
+        if val is not None and val != "":
+            setattr(current, field, val)
+            
+    # Merge custom dimensions dict
+    if update.custom_dimensions:
+        current.custom_dimensions.update(update.custom_dimensions)
+        
+    # Merge key strengths list without duplicates
+    for item in update.key_strengths:
+        if item not in current.key_strengths:
+            current.key_strengths.append(item)
+            
+    # Merge key weaknesses list without duplicates
+    for item in update.key_weaknesses:
+        if item not in current.key_weaknesses:
+            current.key_weaknesses.append(item)
+            
+    # Merge profiling notes without duplicates
+    for item in update.profiling_notes:
+        if item not in current.profiling_notes:
+            current.profiling_notes.append(item)
+            
+    # Merge sources list
+    existing_urls = {src.url for src in current.sources if src.url}
+    for src in update.sources:
+        if src.url and src.url not in existing_urls:
+            current.sources.append(src)
+            existing_urls.add(src.url)
+            
+    return current
+
+
+def merge_competitors_reducer(current: List[CompetitorSchema], updates: List[CompetitorSchema]) -> List[CompetitorSchema]:
+    """
+    Merges updates into the current list of competitors without duplication based on competitor name.
+    """
+    competitor_map = {c.name.lower(): c for c in current}
+    for updated_competitor in updates:
+        key = updated_competitor.name.lower()
+        if key in competitor_map:
+            competitor_map[key] = merge_competitor_records(competitor_map[key], updated_competitor)
+        else:
+            competitor_map[key] = updated_competitor
+    return list(competitor_map.values())
+
+
 def reduce_analysis_state(left: AnalysisState, right: AnalysisState) -> AnalysisState:
     """
     State reducer for parallel graph updates.
-    Since parallel nodes modify the shared mutable AnalysisState in-place,
-    we can simply return the latest update.
+    Intelligently merges competitive data, sources, and other top-level fields.
     """
-    return right
+    # 1. Merge competitors
+    left.competitive.competitors = merge_competitors_reducer(
+        left.competitive.competitors,
+        right.competitive.competitors
+    )
+    
+    # 2. Merge competitive custom dimensions keys
+    if right.competitive.custom_dimension_keys:
+        left.competitive.custom_dimension_keys = list(
+            set(left.competitive.custom_dimension_keys + right.competitive.custom_dimension_keys)
+        )
+        
+    # 3. Merge competitive analysis strings if updated
+    if right.competitive.moat_assessment:
+        left.competitive.moat_assessment = right.competitive.moat_assessment
+    if right.competitive.competitive_risk:
+        left.competitive.competitive_risk = right.competitive.competitive_risk
+    if right.competitive.summary:
+        left.competitive.summary = right.competitive.summary
+        
+    # 4. Merge competitive audit trail
+    if right.competitive.queries_used:
+        left.competitive.queries_used = list(set(left.competitive.queries_used + right.competitive.queries_used))
+        
+    if right.competitive.research_sources:
+        existing_urls = {src.url for src in left.competitive.research_sources if src.url}
+        for src in right.competitive.research_sources:
+            if src.url and src.url not in existing_urls:
+                left.competitive.research_sources.append(src)
+                existing_urls.add(src.url)
+
+    # 5. Merge other top-level fields
+    if right.company != left.company and right.company.name:
+        left.company = right.company
+        
+    if right.founders:
+        left.founders = right.founders
+        
+    if right.agent_statuses:
+        left.agent_statuses.update(right.agent_statuses)
+        
+    if right.errors:
+        left.errors = list(set(left.errors + right.errors))
+        
+    return left
+
+
+def reduce_optional_str(left: Optional[str], right: Optional[str]) -> Optional[str]:
+    """
+    Pass-through/latest-value reducer for optional strings in parallel updates.
+    """
+    return right if right is not None else left
 
 
 class PipelineGraphState(dict):
@@ -67,5 +172,5 @@ class PipelineGraphState(dict):
 
     messages: Annotated[Sequence[BaseMessage], operator.add]
     analysis_state: Annotated[AnalysisState, reduce_analysis_state]
-    raw_deck_text: Optional[str]
-    raw_website_text: Optional[str]
+    raw_deck_text: Annotated[Optional[str], reduce_optional_str]
+    raw_website_text: Annotated[Optional[str], reduce_optional_str]

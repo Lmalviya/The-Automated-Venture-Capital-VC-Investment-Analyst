@@ -136,6 +136,34 @@ class MarketSynthesizerAdaptor(BaseModel):
 class MarketRiskAdaptor(BaseModel):
     market_risks: List[str] = Field(default_factory=list, description="A list of 3-5 detailed, specific risk descriptions")
 
+class CompetitorPlannerDecision(BaseModel):
+    status: Literal["COMPLETE", "INCOMPLETE"] = Field(..., description="Whether discovery is complete or not")
+    queries: List[SearchQueryGoal] = Field(default_factory=list, description="List of 2-3 target search queries")
+
+class CompetitorDiscoveryEntry(BaseModel):
+    name: str = Field(..., description="Competitor name")
+    website_url: Optional[HttpUrl] = Field(default=None, description="Competitor website URL")
+    competitor_type: CompetitorType = Field(default=CompetitorType.DIRECT, description="Competitor classification")
+    rationale: str = Field(..., description="One-sentence rationale for type and selection")
+
+class CompetitorDiscoveryResult(BaseModel):
+    qualified_competitors: List[CompetitorDiscoveryEntry] = Field(default_factory=list, description="Deduplicated and classified competitors")
+    custom_dimension_keys: List[str] = Field(default_factory=list, description="2-3 sector-specific custom dimension keys")
+
+class InvestigatorQueryGoal(BaseModel):
+    query: str = Field(..., description="Target search query")
+    goal: str = Field(..., description="Crawler goal/instructions")
+    tool_mode: Literal["positive", "adversarial"] = Field(..., description="Search tool to use (web_search_tool vs adversarial_search_tool)")
+
+class CompetitorInvestigatorDecision(BaseModel):
+    status: Literal["COMPLETE", "INCOMPLETE"] = Field(..., description="Whether profiling is complete or not")
+    queries: List[InvestigatorQueryGoal] = Field(default_factory=list, description="List of 1-2 positive or adversarial search tasks")
+
+class CompetitiveRiskAdaptor(BaseModel):
+    competitive_risk: str = Field(..., description="Top competitive threats detailed narrative")
+    top_risks: List[str] = Field(default_factory=list, description="3-5 structured risk statements")
+    risk_severity: Literal["CRITICAL", "HIGH", "MODERATE", "LOW"] = Field(..., description="Overall competitive risk rating")
+
 AdaptorType = Union[
     CompanyAdaptor,
     MarketAdaptor,
@@ -147,4 +175,10 @@ AdaptorType = Union[
     MarketPlannerDecision,
     MarketSynthesizerAdaptor,
     MarketRiskAdaptor,
+    CompetitorPlannerDecision,
+    CompetitorDiscoveryEntry,
+    CompetitorDiscoveryResult,
+    InvestigatorQueryGoal,
+    CompetitorInvestigatorDecision,
+    CompetitiveRiskAdaptor,
 ]
