@@ -38,6 +38,15 @@ class AnalysisState(BaseModel):
     memo: MemoSchema = Field(default_factory=MemoSchema, description="Investment memo sections, advisory recommendation (verdict/conviction/do/stop lists), SVG diagrams, and compiled PDF paths")
 
 
+def reduce_analysis_state(left: AnalysisState, right: AnalysisState) -> AnalysisState:
+    """
+    State reducer for parallel graph updates.
+    Since parallel nodes modify the shared mutable AnalysisState in-place,
+    we can simply return the latest update.
+    """
+    return right
+
+
 class PipelineGraphState(dict):
     """
     The single shared global state for the LangGraph pipeline.
@@ -57,6 +66,6 @@ class PipelineGraphState(dict):
     """
 
     messages: Annotated[Sequence[BaseMessage], operator.add]
-    analysis_state: AnalysisState
+    analysis_state: Annotated[AnalysisState, reduce_analysis_state]
     raw_deck_text: Optional[str]
     raw_website_text: Optional[str]

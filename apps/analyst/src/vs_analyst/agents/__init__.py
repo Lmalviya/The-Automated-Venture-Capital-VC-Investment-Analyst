@@ -1,5 +1,9 @@
 from .intake import intake_agent, INTAKE_TOOLS
-from .market import market_agent, MARKET_TOOLS
+from .market import (
+    market_planner_agent, MARKET_PLANNER_TOOLS,
+    market_synthesizer_agent, MARKET_SYNTHESIZER_TOOLS,
+    market_risk_analyst_agent, MARKET_RISK_TOOLS,
+)
 
 class AgentRegistry:
     """
@@ -8,4 +12,6 @@ class AgentRegistry:
     No node or tool should create LLM-related variables inline.
     """
     intake = intake_agent
-    market = market_agent
+    market_planner = market_planner_agent
+    market_synthesizer = market_synthesizer_agent
+    market_risk_analyst = market_risk_analyst_agent

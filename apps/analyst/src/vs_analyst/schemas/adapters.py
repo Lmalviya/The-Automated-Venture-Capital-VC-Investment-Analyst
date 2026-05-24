@@ -1,8 +1,8 @@
 from datetime import datetime
 from pydantic import BaseModel, Field, HttpUrl
-from typing import List, Optional, Dict, Union
+from typing import List, Optional, Dict, Union, Literal
 
-from vs_analyst.schemas.shared_enums import BusinessModel
+from vs_analyst.schemas.shared_enums import BusinessModel, ConfidenceLevel
 from vs_analyst.schemas.market import MarketSize
 from vs_analyst.schemas.founder import FounderRole, FounderSchema
 from vs_analyst.schemas.competitive import CompetitorType, CompetitiveSchema
@@ -114,6 +114,28 @@ class OverviewAdaptor(BaseModel):
         description="Important insights, claims, metrics, or highlights from the page",
     )
 
+class SearchQueryGoal(BaseModel):
+    query: str = Field(..., description="A highly specific, search-engine-optimized query targeting a distinct aspect of the market")
+    goal: str = Field(..., description="The guiding perspective or requirement for the crawler and internal synthesizer")
+    rationale: str = Field(..., description="Rationale for this query based on gaps in current state")
+
+class MarketPlannerDecision(BaseModel):
+    status: Literal["COMPLETE", "INCOMPLETE"] = Field(..., description="Status of the planning phase")
+    queries: List[SearchQueryGoal] = Field(default_factory=list, description="List of exactly 3 distinct queries with goals if status is INCOMPLETE")
+
+class MarketSynthesizerAdaptor(BaseModel):
+    tam: MarketSize = Field(default_factory=MarketSize, description="Verified Total Addressable Market sizing")
+    sam: MarketSize = Field(default_factory=MarketSize, description="Verified Serviceable Addressable Market")
+    som: MarketSize = Field(default_factory=MarketSize, description="Verified Serviceable Obtainable Market")
+    growth_rate: Optional[str] = Field(default=None, description="Synthesized growth rate")
+    growth_source: Optional[str] = Field(default=None, description="Source reference verifying the CAGR")
+    key_trends: List[str] = Field(default_factory=list, description="3-5 synthesized macro industry trends backed by independent sources")
+    summary: Optional[str] = Field(default=None, description="A detailed 2-3 paragraph narrative summarizing the market landscaping")
+    overall_confidence: ConfidenceLevel = Field(default=ConfidenceLevel.LOW, description="A synthesized confidence score representing source quality and consensus")
+
+class MarketRiskAdaptor(BaseModel):
+    market_risks: List[str] = Field(default_factory=list, description="A list of 3-5 detailed, specific risk descriptions")
+
 AdaptorType = Union[
     CompanyAdaptor,
     MarketAdaptor,
@@ -121,4 +143,8 @@ AdaptorType = Union[
     FinanceAdaptor,
     CompetitorAdaptor,
     OverviewAdaptor,
+    SearchQueryGoal,
+    MarketPlannerDecision,
+    MarketSynthesizerAdaptor,
+    MarketRiskAdaptor,
 ]

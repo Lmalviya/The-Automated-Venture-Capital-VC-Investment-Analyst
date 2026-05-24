@@ -6,7 +6,6 @@ from langgraph.prebuilt import ToolNode
 
 from vs_analyst.agents import AgentRegistry
 from vs_analyst.agents.intake import INTAKE_TOOLS
-from vs_analyst.agents.market import MARKET_TOOLS
 from vs_analyst.orchestrator.routing_helper import should_continue
 from vs_analyst.prompts import PromptRegistry
 from vs_analyst.schemas.shared_enums import AgentStatus
@@ -21,8 +20,8 @@ from vs_analyst.nodes import (
     extract_financials_node,
     extract_competitors_node,
     generate_summary_node,
-    map_market_complete_node,
 )
+from vs_analyst.orchestrator.subgraphs.market_subgraph import market_subgraph
 
 logger = get_logger(__name__)
 
@@ -50,32 +49,9 @@ async def intake_agent_node(state: PipelineGraphState) -> Dict[str, Any]:
     logger.info("Intake agent: LLM responded", run_id=analysis_state.run_id)
     return {"messages": [response]}
 
-async def market_agent_node(state: PipelineGraphState) -> Dict[str, Any]:
-    """Market agent node. Replaced the deleted managers/market.py::market_agent_node."""
-    analysis_state = state["analysis_state"]
-    messages = list(state["messages"])
-    has_market_system = any(
-        isinstance(m, SystemMessage) and "Market Research Manager" in m.content
-        for m in messages
-    )
-    if not has_market_system:
-        logger.info("Market agent: first turn", run_id=analysis_state.run_id)
-        company_name = analysis_state.company.name or "the startup"
-        sector = analysis_state.company.sector or "the relevant sector"
-        messages = messages + [
-            SystemMessage(content=PromptRegistry.market_system.value),
-            HumanMessage(content=(
-                f"Conduct market research for '{company_name}' "
-                f"operating in '{sector}'.\nRun ID: {analysis_state.run_id}"
-            )),
-        ]
-    response = await AgentRegistry.market.ainvoke(messages)
-    logger.info("Market agent: LLM responded", run_id=analysis_state.run_id)
-    return {"messages": [response]}
 
 # ── Tool Nodes ─────────────────────────────────────────────────────────────────
 intake_tools_node = ToolNode(INTAKE_TOOLS)
-market_tools_node = ToolNode(MARKET_TOOLS)
 
 
 def route_from_router(state: PipelineGraphState) -> Union[List[str], str]:
@@ -115,7 +91,7 @@ def route_from_router(state: PipelineGraphState) -> Union[List[str], str]:
 
     # 3. If intake is complete, but market research has not started/completed
     if analysis.agent_statuses.get("market") != AgentStatus.COMPLETE:
-        return "market_agent"
+        return "market_subgraph"
 
     # 4. Everything is complete!
     return END
@@ -141,9 +117,8 @@ workflow.add_node("extract_financials", extract_financials_node)
 workflow.add_node("extract_competitors", extract_competitors_node)
 workflow.add_node("generate_summary", generate_summary_node)
 
-workflow.add_node("market_agent", market_agent_node)
-workflow.add_node("market_tools", market_tools_node)
-workflow.add_node("map_market_complete", map_market_complete_node)
+# Market Subgraph node
+workflow.add_node("market_subgraph", market_subgraph)
 
 # Entry point starts at the state coordinator router
 workflow.set_entry_point("state_router")
@@ -160,7 +135,7 @@ workflow.add_conditional_edges(
         "extract_founders": "extract_founders",
         "extract_financials": "extract_financials",
         "extract_competitors": "extract_competitors",
-        "market_agent": "market_agent",
+        "market_subgraph": "market_subgraph",
         "__end__": END
     }
 )
@@ -186,14 +161,8 @@ workflow.add_edge("extract_competitors", "generate_summary")
 # Summary node loops back to the router to decide the next phase
 workflow.add_edge("generate_summary", "state_router")
 
-# Market agent routing
-workflow.add_conditional_edges(
-    "market_agent",
-    should_continue,
-    {"tools": "market_tools", "complete": "map_market_complete"},
-)
-workflow.add_edge("market_tools", "market_agent")
-workflow.add_edge("map_market_complete", "state_router")
+# Market subgraph transition back to coordinator router
+workflow.add_edge("market_subgraph", "state_router")
 
 # Compile
 pipeline = workflow.compile()
@@ -224,6 +193,3 @@ async def run_pipeline(analysis_state: AnalysisState) -> AnalysisState:
 
     logger.info("Pipeline completed", run_id=analysis_state.run_id)
     return final_state["analysis_state"]
-
-
-

@@ -16,6 +16,11 @@ from .intak_layer import (
     INTAKE_HUMAN_REQUEST_TEMPLATE,
     MARKET_SYSTEM_PROMPT
 )
+from .market_prompts import (
+    MARKET_PLANNER_SYSTEM_PROMPT,
+    MARKET_SYNTHESIZER_SYSTEM_PROMPT,
+    MARKET_RISK_ANALYST_SYSTEM_PROMPT,
+)
 
 class PromptRegistry(str, Enum):
     """
@@ -36,3 +41,6 @@ class PromptRegistry(str, Enum):
     intake_system = INTAKE_SYSTEM_PROMPT
     intake_human = INTAKE_HUMAN_REQUEST_TEMPLATE
     market_system = MARKET_SYSTEM_PROMPT
+    market_planner_system = MARKET_PLANNER_SYSTEM_PROMPT
+    market_synthesizer_system = MARKET_SYNTHESIZER_SYSTEM_PROMPT
+    market_risk_analyst_system = MARKET_RISK_ANALYST_SYSTEM_PROMPT
