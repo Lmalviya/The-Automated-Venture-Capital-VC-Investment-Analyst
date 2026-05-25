@@ -21,6 +21,7 @@ dependencies = [
     "langchain-core>=0.2.0",
     "langgraph>=0.1.0",
     "langchain-openai>=0.1.0",
+    "stop-words>=2.0.4",
 ]
 
 [tool.hatch.build.targets.wheel]

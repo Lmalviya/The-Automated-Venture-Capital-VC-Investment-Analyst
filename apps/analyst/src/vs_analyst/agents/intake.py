@@ -8,3 +8,6 @@ INTAKE_TOOLS = [
 
 # Configured LLM runner with bound tools
 intake_agent = llm.bind_tools(INTAKE_TOOLS)
+
+# Deep Research Synthesizer Agent (no tools, purely synthesizes search & crawl context)
+deep_research_synthesizer_agent = llm

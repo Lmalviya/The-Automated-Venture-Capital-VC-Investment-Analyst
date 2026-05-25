@@ -8,6 +8,7 @@ from vs_analyst.tools.cognitive_utils import (
 from vs_analyst.tools.adversarial_search import adversarial_search_tool
 from vs_analyst.tools.deep_research import deep_research_tool
 from vs_analyst.tools.web_search import web_search_tool
+from vs_analyst.tools.website_scraper import website_scraper_tool
 
 __all__ = [
     "calculate_percentage",
@@ -18,4 +19,5 @@ __all__ = [
     "adversarial_search_tool",
     "deep_research_tool",
     "web_search_tool",
+    "website_scraper_tool",
 ]

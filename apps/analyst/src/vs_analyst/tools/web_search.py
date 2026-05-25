@@ -7,6 +7,7 @@ from langchain_core.tools import tool
 
 from vs_analyst.config import settings
 from vs_analyst.utility.logs import get_logger
+from vs_analyst.tools.relevance import bm25_rank
 
 logger = get_logger(__name__)
 
@@ -82,7 +83,7 @@ async def web_search_tool(query: str, top_k: int = 5) -> str:
         query: The search query to run.
         top_k: The number of top search results to return (default: 5).
     """
-    logger.info("web_search_tool invoked", query=query, provider=settings.search_provider, top_k=top_k)
+    logger.info("web_search_tool invoked with BM25 ranking", query=query, provider=settings.search_provider, top_k=top_k)
     
     max_retries = 3
     initial_delay = 1.0  # seconds
@@ -90,6 +91,9 @@ async def web_search_tool(query: str, top_k: int = 5) -> str:
     
     results = []
     last_error = None
+
+    # Fetch more results initially to perform high-quality local BM25 ranking
+    fetch_k = max(top_k * 2, 10)
 
     # Connection pooling with httpx.Limits
     limits = httpx.Limits(max_connections=10, max_keepalive_connections=5)
@@ -99,9 +103,9 @@ async def web_search_tool(query: str, top_k: int = 5) -> str:
             for attempt in range(max_retries):
                 try:
                     if settings.search_provider == "tavily":
-                        results = await _query_tavily(query, client, top_k)
+                        results = await _query_tavily(query, client, fetch_k)
                     else:
-                        results = await _query_searxng(query, client, top_k)
+                        results = await _query_searxng(query, client, fetch_k)
                     break
                 except Exception as e:
                     last_error = str(e)
@@ -130,5 +134,15 @@ async def web_search_tool(query: str, top_k: int = 5) -> str:
             )
         ]
         return json.dumps([r.model_dump() for r in fallback_result])
+
+    # Apply Okapi BM25 Ranking locally on the retrieved candidates
+    if results and len(results) > 1:
+        logger.info("Applying BM25 re-ranking on search candidates", candidate_count=len(results))
+        # Build text representation for BM25: combining title and snippet content
+        corpus = [f"{r.title} {r.snippet}" for r in results]
+        ranked_indices = bm25_rank(query, corpus, top_k=top_k)
+        results = [results[i] for i in ranked_indices]
+    else:
+        results = results[:top_k]
         
     return json.dumps([r.model_dump() for r in results])
