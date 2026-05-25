@@ -9,12 +9,19 @@ from .company import CompanySchema
 from .user_inputs import UserInputSchema
 from .founder import FounderSchema
 from .market import MarketSchema
-from .competitive import CompetitiveSchema, CompetitorSchema
+from .competitive import CompetitiveSchema
 from .due_diligence import DueDiligenceSchema
 from .memo import MemoSchema
 
-from .shared_enums import PipelineStatus, AgentStatus
+from .shared_enums import PipelineStatus, AgentStatus, DDStatus
 from .shared_models import PipelineError
+
+from vs_analyst.map_reducer import (
+    merge_company_records,
+    merge_competitors_reducer,
+    merge_founders_reducer,
+    merge_market_records,
+)
 
 
 class AnalysisState(BaseModel):
@@ -36,148 +43,6 @@ class AnalysisState(BaseModel):
     competitive: CompetitiveSchema = Field(default_factory=CompetitiveSchema, description="Competitor profiles, moat assessment, and competitive risk analysis")
     due_diligence: DueDiligenceSchema = Field(default_factory=DueDiligenceSchema, description="Regulatory/legal signals, traction verifications, press mentions, and org GitHub stats")
     memo: MemoSchema = Field(default_factory=MemoSchema, description="Investment memo sections, advisory recommendation (verdict/conviction/do/stop lists), SVG diagrams, and compiled PDF paths")
-
-
-def merge_competitor_records(current: CompetitorSchema, update: CompetitorSchema) -> CompetitorSchema:
-    """
-    In-place merges fields from update competitor into current competitor.
-    """
-    for field in [
-        "funding_stage", "funding_amount", "geography", "business_model",
-        "founding_year", "positioning"
-    ]:
-        val = getattr(update, field, None)
-        if val is not None and val != "":
-            setattr(current, field, val)
-            
-    # Merge custom dimensions dict
-    if update.custom_dimensions:
-        current.custom_dimensions.update(update.custom_dimensions)
-        
-    # Merge key strengths list without duplicates
-    for item in update.key_strengths:
-        if item not in current.key_strengths:
-            current.key_strengths.append(item)
-            
-    # Merge key weaknesses list without duplicates
-    for item in update.key_weaknesses:
-        if item not in current.key_weaknesses:
-            current.key_weaknesses.append(item)
-            
-    # Merge profiling notes without duplicates
-    for item in update.profiling_notes:
-        if item not in current.profiling_notes:
-            current.profiling_notes.append(item)
-            
-    # Merge sources list
-    existing_urls = {src.url for src in current.sources if src.url}
-    for src in update.sources:
-        if src.url and src.url not in existing_urls:
-            current.sources.append(src)
-            existing_urls.add(src.url)
-            
-    return current
-
-
-def merge_competitors_reducer(current: List[CompetitorSchema], updates: List[CompetitorSchema]) -> List[CompetitorSchema]:
-    """
-    Merges updates into the current list of competitors without duplication based on competitor name.
-    """
-    competitor_map = {c.name.lower(): c for c in current}
-    for updated_competitor in updates:
-        key = updated_competitor.name.lower()
-        if key in competitor_map:
-            competitor_map[key] = merge_competitor_records(competitor_map[key], updated_competitor)
-        else:
-            competitor_map[key] = updated_competitor
-    return list(competitor_map.values())
-
-
-def merge_founder_records(current: FounderSchema, update: FounderSchema) -> FounderSchema:
-    """
-    In-place merges fields from update founder into current founder.
-    """
-    for field in [
-        "role", "linkedin_url", "linkedin_summary", "verified_background", "github_url",
-        "github_public_repos", "github_account_age", "github_active"
-    ]:
-        val = getattr(update, field, None)
-        if val is not None and val != "":
-            setattr(current, field, val)
-
-    # Merge bio_from_deck (only if current doesn't have it)
-    if not current.bio_from_deck and update.bio_from_deck:
-        current.bio_from_deck = update.bio_from_deck
-
-    # Merge simple lists
-    for item in update.past_companies:
-        if item not in current.past_companies:
-            current.past_companies.append(item)
-            
-    for item in update.past_roles:
-        if item not in current.past_roles:
-            current.past_roles.append(item)
-            
-    if update.notable_achievements:
-        if not current.notable_achievements:
-            current.notable_achievements = update.notable_achievements
-        else:
-            for item in update.notable_achievements:
-                if item not in current.notable_achievements:
-                    current.notable_achievements.append(item)
-
-    if update.red_flags:
-        if not current.red_flags:
-            current.red_flags = update.red_flags
-        else:
-            for item in update.red_flags:
-                if item not in current.red_flags:
-                    current.red_flags.append(item)
-
-    # Github list fields
-    for item in update.github_languages:
-        if item not in current.github_languages:
-            current.github_languages.append(item)
-    for item in update.github_oss_notable:
-        if item not in current.github_oss_notable:
-            current.github_oss_notable.append(item)
-
-    # Merge education sub-models list without duplicates based on collage/level/branch
-    if update.education:
-        if not current.education:
-            current.education = update.education
-        else:
-            existing_edu = {
-                (e.collage.lower() if e.collage else "", 
-                 e.level.lower() if e.level else "", 
-                 e.branch.lower() if e.branch else "") 
-                for e in current.education
-            }
-            for e in update.education:
-                key = (
-                    e.collage.lower() if e.collage else "", 
-                    e.level.lower() if e.level else "", 
-                    e.branch.lower() if e.branch else ""
-                )
-                if key not in existing_edu:
-                    current.education.append(e)
-                    existing_edu.add(key)
-
-    return current
-
-
-def merge_founders_reducer(current: List[FounderSchema], updates: List[FounderSchema]) -> List[FounderSchema]:
-    """
-    Merges updates into the current list of founders without duplication based on founder name.
-    """
-    founder_map = {f.name.lower(): f for f in current}
-    for updated_founder in updates:
-        key = updated_founder.name.lower()
-        if key in founder_map:
-            founder_map[key] = merge_founder_records(founder_map[key], updated_founder)
-        else:
-            founder_map[key] = updated_founder
-    return list(founder_map.values())
 
 
 def reduce_analysis_state(left: AnalysisState, right: AnalysisState) -> AnalysisState:
@@ -217,8 +82,11 @@ def reduce_analysis_state(left: AnalysisState, right: AnalysisState) -> Analysis
                 existing_urls.add(src.url)
 
     # 5. Merge other top-level fields
-    if right.company != left.company and right.company.name:
-        left.company = right.company
+    if right.company:
+        left.company = merge_company_records(left.company, right.company)
+        
+    if right.market:
+        left.market = merge_market_records(left.market, right.market)
         
     if right.founders:
         left.founders = merge_founders_reducer(left.founders, right.founders)
@@ -394,4 +262,4 @@ class PipelineGraphState(dict):
     messages: Annotated[Sequence[BaseMessage], operator.add]
     analysis_state: Annotated[AnalysisState, reduce_analysis_state]
     raw_deck_text: Annotated[Optional[str], reduce_optional_str]
-    raw_website_text: Annotated[Optional[str], reduce_optional_str]
+    raw_website_text: Annotated[Optional[str], reduce_optional_str]

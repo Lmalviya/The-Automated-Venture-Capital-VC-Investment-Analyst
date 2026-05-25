@@ -1,7 +1,12 @@
 # due_diligence.py
 from vs_analyst.utility.llm import llm
-from vs_analyst.tools.deep_research import deep_research_tool
-from vs_analyst.tools.market_tools import web_search_tool
+from vs_analyst.tools import (
+    deep_research_tool,
+    years_since,
+    get_current_date,
+    parse_numeric_value,
+    calculate_percentage
+)
 
 # 1. DD Extractor Agent (pure state extraction)
 DD_EXTRACTOR_TOOLS = []
@@ -15,10 +20,10 @@ dd_legal_verifier_agent = llm.bind_tools(DD_LEGAL_VERIFIER_TOOLS)
 DD_TRACTION_VERIFIER_TOOLS = [deep_research_tool]
 dd_traction_verifier_agent = llm.bind_tools(DD_TRACTION_VERIFIER_TOOLS)
 
-# 4. DD Press Verifier Agent (bound to web_search_tool)
-DD_PRESS_VERIFIER_TOOLS = [web_search_tool]
+# 4. DD Press Verifier Agent
+DD_PRESS_VERIFIER_TOOLS = [deep_research_tool]
 dd_press_verifier_agent = llm.bind_tools(DD_PRESS_VERIFIER_TOOLS)
 
 # 5. DD Synthesizer Agent (pure synthesis, no tools)
-DD_SYNTHESIZER_TOOLS = []
+DD_SYNTHESIZER_TOOLS = [years_since, get_current_date, parse_numeric_value, calculate_percentage]
 dd_synthesizer_agent = llm.bind_tools(DD_SYNTHESIZER_TOOLS)

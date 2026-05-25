@@ -1,7 +1,8 @@
 from vs_analyst.utility.llm import llm
-from vs_analyst.tools.market_tools import web_search_tool
-from vs_analyst.tools.adversarial_search import adversarial_search_tool
-from vs_analyst.tools.cognitive_utils import (
+from vs_analyst.tools import (
+    adversarial_search_tool,
+    deep_research_tool,
+
     calculate_percentage,
     parse_numeric_value,
     years_since,
@@ -10,7 +11,7 @@ from vs_analyst.tools.cognitive_utils import (
 )
 
 # 1. Competitor Finder Planner Agent
-COMPETITOR_FINDER_PLANNER_TOOLS = [web_search_tool]
+COMPETITOR_FINDER_PLANNER_TOOLS = [deep_research_tool]
 competitor_finder_planner_agent = llm.bind_tools(COMPETITOR_FINDER_PLANNER_TOOLS)
 
 # 2. Competitor Finder Synthesizer Agent
@@ -18,7 +19,7 @@ COMPETITOR_FINDER_SYNTHESIZER_TOOLS = []
 competitor_finder_synthesizer_agent = llm.bind_tools(COMPETITOR_FINDER_SYNTHESIZER_TOOLS)
 
 # 3. Competitor Investigator Planner Agent
-COMPETITOR_INVESTIGATOR_PLANNER_TOOLS = [web_search_tool, adversarial_search_tool]
+COMPETITOR_INVESTIGATOR_PLANNER_TOOLS = [deep_research_tool, adversarial_search_tool]
 competitor_investigator_planner_agent = llm.bind_tools(COMPETITOR_INVESTIGATOR_PLANNER_TOOLS)
 
 # 4. Competitor Investigator Synthesizer Agent
