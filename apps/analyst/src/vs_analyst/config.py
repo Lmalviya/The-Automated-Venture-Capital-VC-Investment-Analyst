@@ -2,9 +2,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from functools import lru_cache
-from typing import Literal
+from typing import Literal, Optional
 
-from pydantic import Field, SecretStr, computed_field, HttpUrl
+from pydantic import Field, SecretStr, computed_field, HttpUrl, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -73,10 +73,42 @@ class Settings(BaseSettings):
     backend_callback_url: HttpUrl | None = Field(default=None, alias="BACKEND_CALLBACK_URL")
 
     # Web & Crawling Settings
-    searxng_url: HttpUrl = Field(default="http://localhost:8080", alias="SEARXNG_URL")
+    search_provider: Optional[Literal["tavily", "searxng"]] = Field(default=None, alias="SEARCH_PROVIDER")
+    searxng_url: Optional[HttpUrl] = Field(default=None, alias="SEARXNG_URL")
+    tavily_api_key: Optional[SecretStr] = Field(default=None, alias="TAVILY_API_KEY")
+    search_timeout: float = Field(default=8.0, alias="SEARCH_TIMEOUT")
     crawl_depth_limit: int = Field(default=2, alias="CRAWL_DEPTH_LIMIT")
     crawl_max_pages: int = Field(default=5, alias="CRAWL_MAX_PAGES")
     market_research_max_attempts: int = Field(default=2, alias="MARKET_RESEARCH_MAX_ATTEMPTS")
+
+    @model_validator(mode="after")
+    def validate_search_provider(self) -> "Settings":
+        has_tavily = self.tavily_api_key is not None and self.tavily_api_key.get_secret_value().strip() != ""
+        has_searxng = self.searxng_url is not None and str(self.searxng_url).strip() != ""
+
+        if not has_tavily and not has_searxng:
+            raise ValueError("At least one of TAVILY_API_KEY or SEARXNG_URL must be provided.")
+
+        # Determine default provider if not explicitly configured
+        if not self.search_provider:
+            if has_tavily:
+                self.search_provider = "tavily"
+            else:
+                self.search_provider = "searxng"
+        else:
+            # Respect explicit setting, but fallback gracefully if missing config
+            if self.search_provider == "tavily" and not has_tavily:
+                if has_searxng:
+                    self.search_provider = "searxng"
+                else:
+                    raise ValueError("SEARCH_PROVIDER is set to 'tavily' but TAVILY_API_KEY is not provided.")
+            elif self.search_provider == "searxng" and not has_searxng:
+                if has_tavily:
+                    self.search_provider = "tavily"
+                else:
+                    raise ValueError("SEARCH_PROVIDER is set to 'searxng' but SEARXNG_URL is not provided.")
+
+        return self
 
     llm: TextLLMConfig = TextLLMConfig()
     vlm: ImageVLMConfig = ImageVLMConfig()

@@ -1,0 +1,27 @@
+# SearXNG settings
+
+use_default_settings: true
+
+server:
+  port: 8080
+  bind_address: "0.0.0.0"
+  secret_key: "antigravity_vc_analyst_secret_key"
+
+search:
+  safe_search: 0
+  autocomplete: ""
+
+# Engine overrides if needed (default set includes Google, DuckDuckGo, Bing, etc.)
+engines:
+  - name: google
+    engine: google
+    shortcut: go
+    timeout: 3.0
+  - name: duckduckgo
+    engine: duckduckgo
+    shortcut: ddg
+    timeout: 3.0
+  - name: wikipedia
+    engine: wikipedia
+    shortcut: wp
+    timeout: 3.0

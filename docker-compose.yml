@@ -68,6 +68,19 @@ services:
     networks:
       - vc-analyst-network
 
+  searxng:
+    image: searxng/searxng:latest
+    container_name: searxng
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./searxng:/etc/searxng:ro
+    environment:
+      - SEARXNG_SETTINGS_PATH=/etc/searxng/settings.yml
+    networks:
+      - vc-analyst-network
+    restart: always
+
 volumes:
   minio_data:
 
