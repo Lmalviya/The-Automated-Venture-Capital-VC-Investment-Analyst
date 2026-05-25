@@ -35,6 +35,22 @@ from vs_analyst.nodes.due_diligence import (
     dd_press_verifier_node,
     dd_synthesizer_node,
 )
+from vs_analyst.nodes.report import (
+    state_assembler_node,
+    executive_summary_writer_node,
+    market_section_writer_node,
+    competitor_section_writer_node,
+    founder_section_writer_node,
+    dd_section_writer_node,
+    investment_advocate_node,
+    investment_adversary_node,
+    growth_strategist_node,
+    hazard_mitigator_node,
+    venture_partner_ic_agent_node,
+    memo_reviewer_node,
+    vector_diagram_generator_node,
+    document_compiler_node,
+)
 
 __all__ = [
     "state_router_node",
@@ -60,4 +76,18 @@ __all__ = [
     "dd_traction_verifier_node",
     "dd_press_verifier_node",
     "dd_synthesizer_node",
+    "state_assembler_node",
+    "executive_summary_writer_node",
+    "market_section_writer_node",
+    "competitor_section_writer_node",
+    "founder_section_writer_node",
+    "dd_section_writer_node",
+    "investment_advocate_node",
+    "investment_adversary_node",
+    "growth_strategist_node",
+    "hazard_mitigator_node",
+    "venture_partner_ic_agent_node",
+    "memo_reviewer_node",
+    "vector_diagram_generator_node",
+    "document_compiler_node",
 ]

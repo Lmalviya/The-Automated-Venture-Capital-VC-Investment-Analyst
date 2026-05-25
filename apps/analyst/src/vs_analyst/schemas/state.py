@@ -314,6 +314,49 @@ def reduce_analysis_state(left: AnalysisState, right: AnalysisState) -> Analysis
                     if note not in left.due_diligence.github.fetch_notes:
                         left.due_diligence.github.fetch_notes.append(note)
 
+    if right.memo:
+        # Merge memo sections
+        for section_field in ["executive_summary", "company_overview", "market_analysis", "competitive_landscape", "team_assessment", "due_diligence_notes"]:
+            r_val = getattr(right.memo, section_field)
+            if r_val is not None:
+                setattr(left.memo, section_field, r_val)
+        
+        # Merge advisory briefs/directives
+        for brief_field in ["advocate_brief", "adversary_brief", "do_directive", "stop_directive"]:
+            r_val = getattr(right.memo, brief_field)
+            if r_val is not None:
+                setattr(left.memo, brief_field, r_val)
+
+        # Merge recommendation
+        if right.memo.recommendation is not None:
+            left.memo.recommendation = right.memo.recommendation
+
+        # Merge review state
+        if right.memo.review_decision is not None:
+            left.memo.review_decision = right.memo.review_decision
+        if right.memo.review_attempts != 0:
+            left.memo.review_attempts = right.memo.review_attempts
+
+        # Merge caveats without duplicates based on source and message
+        existing_caveats = {(c.source.lower(), c.message.lower()) for c in left.memo.caveats}
+        for c in right.memo.caveats:
+            key = (c.source.lower(), c.message.lower())
+            if key not in existing_caveats:
+                left.memo.caveats.append(c)
+                existing_caveats.add(key)
+
+        # Merge full_markdown, html_pdf_path, typst_pdf_path
+        if right.memo.full_markdown:
+            left.memo.full_markdown = right.memo.full_markdown
+        if right.memo.html_pdf_path:
+            left.memo.html_pdf_path = right.memo.html_pdf_path
+        if right.memo.typst_pdf_path:
+            left.memo.typst_pdf_path = right.memo.typst_pdf_path
+
+        # Merge diagrams dict
+        if right.memo.diagrams:
+            left.memo.diagrams.update(right.memo.diagrams)
+
     if right.agent_statuses:
         left.agent_statuses.update(right.agent_statuses)
         

@@ -22,6 +22,20 @@ from .due_diligence import (
     dd_press_verifier_agent, DD_PRESS_VERIFIER_TOOLS,
     dd_synthesizer_agent, DD_SYNTHESIZER_TOOLS,
 )
+from .report import (
+    executive_summary_writer_agent,
+    market_section_writer_agent,
+    competitor_section_writer_agent,
+    founder_section_writer_agent,
+    dd_section_writer_agent,
+    investment_advocate_agent,
+    investment_adversary_agent,
+    growth_strategist_agent,
+    hazard_mitigator_agent,
+    venture_partner_ic_agent,
+    memo_reviewer_agent,
+    compiler_agent,
+)
 
 class AgentRegistry:
     """
@@ -51,3 +65,17 @@ class AgentRegistry:
     dd_traction_verifier = dd_traction_verifier_agent
     dd_press_verifier = dd_press_verifier_agent
     dd_synthesizer = dd_synthesizer_agent
+
+    # Report / Memo agents
+    executive_summary_writer = executive_summary_writer_agent
+    market_section_writer = market_section_writer_agent
+    competitor_section_writer = competitor_section_writer_agent
+    founder_section_writer = founder_section_writer_agent
+    dd_section_writer = dd_section_writer_agent
+    investment_advocate = investment_advocate_agent
+    investment_adversary = investment_adversary_agent
+    growth_strategist = growth_strategist_agent
+    hazard_mitigator = hazard_mitigator_agent
+    venture_partner_ic = venture_partner_ic_agent
+    memo_reviewer = memo_reviewer_agent
+    compiler = compiler_agent

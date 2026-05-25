@@ -117,6 +117,12 @@ class MemoSchema(BaseModel):
     # ── Advisory Recommendation (written by venture_partner_ic_agent) ──
     recommendation        : Optional[InvestmentRecommendation] = None
 
+    # ── Temporary fields for parallel advisory briefs ──────
+    advocate_brief        : Optional[InvestmentBrief] = None
+    adversary_brief       : Optional[InvestmentBrief] = None
+    do_directive          : Optional[StrategicDirective] = None
+    stop_directive        : Optional[StrategicDirective] = None
+
     # ── Visual Diagrams (SVG strings, written by vector_diagram_generator) ──
     diagrams              : Dict[str, str] = {}
     # Keys: "competitive_quadrant", "traction_sparkline", "moat_radar"

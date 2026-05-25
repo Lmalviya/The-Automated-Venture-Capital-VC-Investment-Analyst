@@ -39,6 +39,19 @@ from .due_diligence_prompts import (
     DD_PRESS_VERIFIER_SYSTEM_PROMPT,
     DD_SYNTHESIZER_SYSTEM_PROMPT,
 )
+from .report_prompts import (
+    EXECUTIVE_SUMMARY_WRITER_PROMPT,
+    MARKET_SECTION_WRITER_PROMPT,
+    COMPETITOR_SECTION_WRITER_PROMPT,
+    FOUNDER_SECTION_WRITER_PROMPT,
+    DD_SECTION_WRITER_PROMPT,
+    INVESTMENT_ADVOCATE_PROMPT,
+    INVESTMENT_ADVERSARY_PROMPT,
+    GROWTH_STRATEGIST_PROMPT,
+    HAZARD_MITIGATOR_PROMPT,
+    VENTURE_PARTNER_IC_PROMPT,
+    MEMO_REVIEWER_PROMPT,
+)
 
 class PromptRegistry(str, Enum):
     """
@@ -74,3 +87,16 @@ class PromptRegistry(str, Enum):
     dd_traction_verifier_system = DD_TRACTION_VERIFIER_SYSTEM_PROMPT
     dd_press_verifier_system = DD_PRESS_VERIFIER_SYSTEM_PROMPT
     dd_synthesizer_system = DD_SYNTHESIZER_SYSTEM_PROMPT
+
+    # Report / Memo Prompts
+    executive_summary_writer_system = EXECUTIVE_SUMMARY_WRITER_PROMPT
+    market_section_writer_system = MARKET_SECTION_WRITER_PROMPT
+    competitor_section_writer_system = COMPETITOR_SECTION_WRITER_PROMPT
+    founder_section_writer_system = FOUNDER_SECTION_WRITER_PROMPT
+    dd_section_writer_system = DD_SECTION_WRITER_PROMPT
+    investment_advocate_system = INVESTMENT_ADVOCATE_PROMPT
+    investment_adversary_system = INVESTMENT_ADVERSARY_PROMPT
+    growth_strategist_system = GROWTH_STRATEGIST_PROMPT
+    hazard_mitigator_system = HAZARD_MITIGATOR_PROMPT
+    venture_partner_ic_system = VENTURE_PARTNER_IC_PROMPT
+    memo_reviewer_system = MEMO_REVIEWER_PROMPT
