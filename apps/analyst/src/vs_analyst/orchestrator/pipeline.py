@@ -3,10 +3,12 @@ from typing import List, Union, Dict, Any
 from langgraph.graph import END, StateGraph
 
 from vs_analyst.schemas.state import PipelineGraphState, AnalysisState
+from vs_analyst.schemas.shared_enums import PipelineStatus
 from vs_analyst.utility.logs import get_logger
 from vs_analyst.nodes import (
     state_router_node,
     intake_extraction_node,
+    abort_pipeline_node,
     extract_company_node,
     extract_market_node,
     extract_founders_node,
@@ -25,14 +27,20 @@ logger = get_logger(__name__)
 
 def route_from_router(state: PipelineGraphState) -> Union[List[str], str]:
     """
-    Dynamic routing edge that directs flow based on the completeness of AnalysisState.
-    If raw deck text is missing, directs flow to intake_extraction.
-    Otherwise, forks to all 5 extraction nodes in parallel.
+    Deterministic routing from the intake router node.
+    Checks if raw_deck_text is present. If missing, it routes to intake_extraction
+    (loop prevention checks: allows up to 2 attempts max, then aborts).
+    Otherwise, branches to the 5 parallel extraction nodes.
     """
     raw_text = state.get("raw_deck_text")
+    attempts = state.get("intake_attempts", 0)
+    max_attempts = 2  # Max attempts allowed
 
     if not raw_text:
-        logger.info("Raw deck text missing. Routing to intake_extraction.")
+        if attempts >= max_attempts:
+            logger.error("Ingestion failed after maximum attempts. Routing to abort_pipeline.")
+            return "abort_pipeline"
+        logger.info("Raw deck text missing. Routing to intake_extraction.", attempts=attempts)
         return "intake_extraction"
 
     logger.info("Raw deck text present. Branching to parallel extraction nodes.")
@@ -42,6 +50,28 @@ def route_from_router(state: PipelineGraphState) -> Union[List[str], str]:
         "extract_founders",
         "extract_financials",
         "extract_competitors"
+    ]
+
+
+def verify_company_gate(state: PipelineGraphState) -> Union[List[str], str]:
+    """
+    Gatekeeper router checking the extraction of company data.
+    If company name or sector is missing, aborts the pipeline to prevent wasted API costs.
+    Otherwise, forks parallel research subgraphs.
+    """
+    analysis_state = state["analysis_state"]
+    company = analysis_state.company
+
+    if not company.name or not company.sector or company.sector == "UNKNOWN":
+        logger.error("Company Dependency Gate failed: Company name or sector is missing or UNKNOWN. Aborting pipeline.")
+        return "abort_pipeline"
+
+    logger.info("Company Dependency Gate passed. Forking parallel research subgraphs.")
+    return [
+        "market_subgraph",
+        "competitor_subgraph",
+        "founder_subgraph",
+        "due_diligence_subgraph"
     ]
 
 
@@ -72,6 +102,7 @@ workflow = StateGraph(PipelineGraphState)
 # 1. Add all Nodes
 workflow.add_node("state_router", state_router_node)
 workflow.add_node("intake_extraction", intake_extraction_node)
+workflow.add_node("abort_pipeline", abort_pipeline_node)
 
 # Extraction nodes
 workflow.add_node("extract_company", extract_company_node)
@@ -102,6 +133,7 @@ workflow.add_conditional_edges(
     route_from_router,
     {
         "intake_extraction": "intake_extraction",
+        "abort_pipeline": "abort_pipeline",
         "extract_company": "extract_company",
         "extract_market": "extract_market",
         "extract_founders": "extract_founders",
@@ -120,14 +152,18 @@ workflow.add_edge("extract_founders", "generate_summary")
 workflow.add_edge("extract_financials", "generate_summary")
 workflow.add_edge("extract_competitors", "generate_summary")
 
-# Summary node writes to the research parallel fork node
-workflow.add_edge("generate_summary", "research_fork")
-
-# Research Fork splits flow to parallel research subgraphs
-workflow.add_edge("research_fork", "market_subgraph")
-workflow.add_edge("research_fork", "competitor_subgraph")
-workflow.add_edge("research_fork", "founder_subgraph")
-workflow.add_edge("research_fork", "due_diligence_subgraph")
+# Verification gate conditional edge after generate_summary
+workflow.add_conditional_edges(
+    "generate_summary",
+    verify_company_gate,
+    {
+        "abort_pipeline": "abort_pipeline",
+        "market_subgraph": "market_subgraph",
+        "competitor_subgraph": "competitor_subgraph",
+        "founder_subgraph": "founder_subgraph",
+        "due_diligence_subgraph": "due_diligence_subgraph",
+    }
+)
 
 # Wire parallel subgraphs to merge at Join Coordinator
 workflow.add_edge("market_subgraph", "join_coordinator")
@@ -140,6 +176,9 @@ workflow.add_edge("join_coordinator", "report_subgraph")
 
 # Report subgraph completes the pipeline
 workflow.add_edge("report_subgraph", END)
+
+# Abort pipeline exits graph immediately
+workflow.add_edge("abort_pipeline", END)
 
 # Compile
 pipeline = workflow.compile()
@@ -163,7 +202,8 @@ async def run_pipeline(analysis_state: AnalysisState, checkpointer: Any = None) 
         "messages": [],
         "analysis_state": analysis_state,
         "raw_deck_text": None,
-        "raw_website_text": None
+        "raw_website_text": None,
+        "intake_attempts": 0
     }
 
     if checkpointer is not None:
@@ -179,4 +219,3 @@ async def run_pipeline(analysis_state: AnalysisState, checkpointer: Any = None) 
 
     logger.info("Pipeline completed", run_id=analysis_state.run_id)
     return final_state["analysis_state"]
-

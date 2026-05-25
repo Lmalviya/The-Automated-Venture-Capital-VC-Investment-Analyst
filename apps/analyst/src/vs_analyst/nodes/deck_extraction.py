@@ -1,21 +1,79 @@
+import re
+import json
 from typing import Any, Dict
 from pathlib import Path
 from vs_analyst.schemas.state import PipelineGraphState
 from vs_analyst.schemas.shared_enums import AgentStatus
 from vs_analyst.services.deck_reader import file_extractor
+from vs_analyst.tools.website_scraper import website_scraper_tool
 
 async def intake_extraction_node(state: PipelineGraphState) -> Dict[str, Any]:
     """
-    Intake phase node. Reads pitch deck from disk via services.deck_reader.
-    Writes raw_deck_text directly to state. No LLM call — pure Python service.
+    Intake phase node. Reads pitch deck from disk via services.deck_reader,
+    automatically extracts the website URL via regex, crawls the company website
+    using the website scraper tool, and tracks ingestion attempts.
     """
+    attempts = state.get("intake_attempts", 0) + 1
     analysis_state = state["analysis_state"]
-    file_path = Path(analysis_state.user_input.pitch_deck_path)
-    result = await file_extractor(file_path, analysis_state.run_id, logger)
-    full_text = "\n=========\n".join(
-        [f"Page No: {p.page_number}\nContent: {p.text}" for p in result.pages]
-    )
-    return {"raw_deck_text": full_text}
+    
+    raw_deck_text = None
+    raw_website_text = None
+    
+    try:
+        file_path = Path(analysis_state.user_input.pitch_deck_path)
+        logger.info("Intake Ingestion: Extracting slide deck text via VLM OCR", file_path=str(file_path), attempt=attempts)
+        result = await file_extractor(file_path, analysis_state.run_id, logger)
+        
+        if result and result.pages:
+            raw_deck_text = "\n=========\n".join(
+                [f"Page No: {p.page_number}\nContent: {p.text}" for p in result.pages]
+            )
+            
+            # Regex Website Extraction
+            # Match standard URLs: http(s)://domain.com or www.domain.com or naked domains
+            url_pattern = r'(https?://[^\s"\'>]+|www\.[^\s"\'>]+|[a-zA-Z0-9.-]+\.(?:com|org|net|io|co|ai|edu|gov|xyz|biz|info|me|app))'
+            matches = re.findall(url_pattern, raw_deck_text)
+            extracted_url = None
+            for match in matches:
+                clean = match.strip().rstrip(".,;/")
+                # Exclude false positives commonly found in deck texts
+                if clean.lower() not in ("page.no", "fig.no", "chart.no", "version.no", "pdf", "pptx", "mrr", "cagr", "mrr.growth", "mrr.run"):
+                    if not clean.startswith(("http://", "https://")):
+                        clean = "https://" + clean
+                    extracted_url = clean
+                    break
+            
+            if extracted_url:
+                logger.info("Intake Ingestion: Website URL identified, initiating crawl", website_url=extracted_url)
+                # Call website crawler tool directly
+                scrape_result = await website_scraper_tool.ainvoke({"urls": [extracted_url]})
+                
+                if scrape_result and not scrape_result.startswith("Web scraper was unable"):
+                    try:
+                        chunks = json.loads(scrape_result)
+                        raw_website_text = "\n\n".join([chunk["text"] for chunk in chunks if "text" in chunk])
+                        logger.info("Intake Ingestion: Website crawled successfully", char_count=len(raw_website_text))
+                    except Exception:
+                        raw_website_text = scrape_result
+                        logger.warning("Intake Ingestion: Web scraper returned raw response instead of JSON chunks")
+                else:
+                    logger.warning("Intake Ingestion: Web scraping returned empty or error response", result=scrape_result)
+            else:
+                logger.warning("Intake Ingestion: No valid company website URL found in pitch deck text")
+                
+    except Exception as e:
+        logger.error("Intake Ingestion: Ingest processing failed", error=str(e))
+
+    # Sync variables with analysis_state
+    analysis_state.raw_deck_text = raw_deck_text
+    analysis_state.raw_website_text = raw_website_text
+
+    return {
+        "raw_deck_text": raw_deck_text,
+        "raw_website_text": raw_website_text,
+        "intake_attempts": attempts,
+        "analysis_state": analysis_state
+    }
 
 
 from vs_analyst.schemas.competitive import CompetitorSchema

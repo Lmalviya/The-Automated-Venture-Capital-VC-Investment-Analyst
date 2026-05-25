@@ -8,7 +8,7 @@ from vs_analyst.schemas.state import AnalysisState
 from vs_analyst.schemas.due_diligence import TractionVerification
 from vs_analyst.schemas.shared_models import PressMention
 from vs_analyst.tools.deep_research import deep_research_tool
-from vs_analyst.tools.market_tools import web_search_tool
+from vs_analyst.tools.web_search import web_search_tool
 from vs_analyst.utility.llm import llm
 from vs_analyst.utility.logs import get_logger
 

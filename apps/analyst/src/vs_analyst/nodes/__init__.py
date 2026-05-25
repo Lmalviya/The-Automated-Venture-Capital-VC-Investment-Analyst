@@ -1,5 +1,6 @@
 from vs_analyst.nodes.coordinator import (
     state_router_node,
+    abort_pipeline_node,
 )
 from vs_analyst.nodes.deck_extraction import (
     intake_extraction_node,
@@ -54,6 +55,7 @@ from vs_analyst.nodes.report import (
 
 __all__ = [
     "state_router_node",
+    "abort_pipeline_node",
     "intake_extraction_node",
     "extract_company_node",
     "extract_market_node",

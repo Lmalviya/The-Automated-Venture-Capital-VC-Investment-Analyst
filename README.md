@@ -1,10 +1,12 @@
-# Automated Venture Capital (VC) Investment Analyst Monorepo
+# 🕵️‍♂️ Automated Venture Capital (VC) Investment Analyst
 
-Welcome to the **Automated VC Investment Analyst Monorepo**! This repository is organized as a production-grade, Dockerized microservices application split into distinct service packages.
+Autonomous multi-agent research platform built with LangGraph orchestration, FastAPI microservices, and production-grade infrastructure to evaluate startup pitch decks and compile institutional-grade investment memos.
 
-## Architecture Overview
+---
 
-This monorepo separates our core system concerns into three independent containers working inside a private Docker bridge network:
+## 🏗️ Architecture
+
+The monorepo separates our core system concerns into independent, containerized services working inside a private Docker bridge network:
 
 ```
                   ┌──────────────────────┐
@@ -30,73 +32,68 @@ This monorepo separates our core system concerns into three independent containe
 
 ---
 
-## Repository Structure
+## 📁 Directory Structure
 
-```
-.
-├── apps/
-│   ├── ui/               # React + Vite frontend served via Nginx (Port 3000)
-│   ├── backend/          # REST API Gateway (Port 8000)
-│   └── analyst/          # LangGraph VC analysis orchestrator service (Port 8001)
-├── docker-compose.yml    # Root orchestration config for containers & local MinIO
-└── README.md             # This guide
-```
+- **`apps/ui`**: React + Vite frontend served via Nginx (Port 3000) with a premium, sleek Claude-inspired dark aesthetic.
+- **`apps/backend`**: REST API Gateway (Port 8000) managing presigned upload URLs, database credentials, and MinIO S3 bucket integrations.
+- **`apps/analyst`**: Core AI Analyst Service (Port 8001) driven by FastAPI, LangGraph, and a multi-agent investment committee.
 
 ---
 
-## Isolated Dependencies
+## 🚀 Quick Start (Local Development)
 
-Each application is self-contained with no shared global configurations or root package managers:
-* **`apps/ui`**: Node-based package using `package.json` for React/Vite dependencies.
-* **`apps/backend`**: Python-based package using `pyproject.toml` managing FastAPI gateway packages (e.g. `boto3`, `httpx`).
-* **`apps/analyst`**: Python-based package using `pyproject.toml` managing LangGraph, LangChain, OpenAI, and extraction libraries (e.g. `pymupdf`, `python-pptx`).
-
----
-
-## Local Development & Setup
-
-### Prerequisites
-* [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running.
-
-### 1. Configure Environment Variables
-Create a `.env` file inside the `apps/analyst/` directory to configure your LLM provider api keys:
+### 1. Configure the Environment
+Create a `.env` file in `apps/analyst/` to set your credentials:
 ```env
-OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_API_KEY=your_openai_key_here
+TAVILY_API_KEY=your_tavily_key_here
 ```
 
-### 2. Boot the entire stack or individual services
-From the root of the repository, execute the following command to build and start all containers in the background:
+### 2. Boot the Full Stack (Docker Compose)
+From the root of the repository, compile and launch the microservices in the background:
 ```bash
 docker compose up --build -d
 ```
-Alternatively, if you want to boot and run the **Analyst Engine** and its core persistence/web research dependencies only:
+
+To run only the **Analyst Engine** along with its web search and database dependencies:
 ```bash
 docker compose up --build -d analyst postgres minio searxng
 ```
 
-### 3. Verify Container Endpoints
-Once the build is complete, you can access the services on your local machine:
-* **Frontend Web App UI**: http://localhost:3000
-* **Backend API Gateway Docs (Swagger)**: http://localhost:8000/docs
-* **Analyst Agent API Docs (Swagger)**: http://localhost:8001/docs
-* **PostgreSQL State Saver Database**: `localhost:5432` (Credentials: `postgres` / `postgrespassword`, DB name: `vc_analyst`)
-* **MinIO Object Storage Console**: http://localhost:9001 (Credentials: `minioadmin` / `minioadminpassword`)
-* **Searxng Local Search Engine**: http://localhost:8080
+### 3. Setup Python Dependencies (Local In-Memory Mode)
+If running outside of Docker using the high-performance `uv` package manager:
+```bash
+# Sync dependencies in the analyst application folder
+cd apps/analyst
+uv sync
+```
 
 ---
 
-## Output Persistence & Report Storage
+## 🔗 Port Mapping
 
-All compiled PDF reports generated during the agentic IC review process are saved inside your host workspace directory in real-time:
-- **Pattern A (Web-Sleek PDF via Playwright)**: `./outputs/{run_id}/memo_web.pdf`
-- **Pattern B (Institutional Typst PDF)**: `./outputs/{run_id}/memo_typst.pdf`
-
-These compiled reports are synced between the container environment and your local machine via a mounted Docker volume, ensuring data persistence and easy local access after container shutdown.
+| Service | Protocol / API | Local Endpoint |
+| :--- | :--- | :--- |
+| **Frontend Web UI** | React Dashboard | [http://localhost:3000](http://localhost:3000) |
+| **Backend Gateway** | FastAPI Swagger Docs | [http://localhost:8000/docs](http://localhost:8000/docs) |
+| **Analyst Agent API** | FastAPI Swagger Docs | [http://localhost:8001/docs](http://localhost:8001/docs) |
+| **MinIO Console** | S3 Browser UI | [http://localhost:9001](http://localhost:9001) |
+| **PostgreSQL** | Checkpoint Database | `localhost:5432` (`db: vc_analyst`) |
+| **SearXNG** | Metasearch Engine | [http://localhost:8080](http://localhost:8080) |
 
 ---
 
-## The Secure Direct-to-Storage Upload Flow
+## 🛠️ Features
 
-1. **Intake Form**: When a user fills out details on the UI and adds a pitch deck PDF, the UI contacts the **Backend Gateway** (Port 8000) to request a temporary, short-lived S3 Upload URL.
-2. **Direct Upload**: The Backend uses its external credentials to sign a URL and returns it. The UI then uploads the raw binary file **directly** to the **MinIO Object Storage** (Port 9000). The main Python servers never consume network overhead for file bytes.
-3. **Execution**: The UI submits the structured JSON payload containing the MinIO key (`file_path`) and other details to the Backend, which forwards it to the **Analyst Engine** (Port 8001). The Analyst pulls the PDF from MinIO internally, executes the LangGraph agent pipeline, and returns the result.
+- **Ingestion OCR & Scraper Loop**: Automated ingestion parsing PDFs/PPTXs slide-by-slide via Vision Language Models (VLM OCR) fallback. Extracts domain URLs using Regex and crawls the site concurrently for context.
+- **Single-Pass Joint-Context Extraction**: Joint context parsing (`raw_deck_text` + `raw_website_text`) feeds 5 parallel extraction nodes simultaneously, avoiding redundant LLM queries.
+- **State-Driven Python Hybrid Routing**: Programmatic Python `conditional_edges` and strict max attempt limits prevent infinite agent loops and lower latency compared to LLM-supervisor patterns.
+- **Dynamic Multiphase Agentic IC Debate**: 
+  - **Factual Drafting (Phase 1):** Parallel section writers draft Markdown copy.
+  - **Advisory Debate (Phase 2):** Two adversarial nodes ("The Bull" and "The Bear") debate investment thesis and risks, while specialized action agents provide actionable strategic directives.
+- **LLM-as-a-Judge Fact Auditor**: Strict factual integrity audit (`memo_reviewer`) checking numerical claims and company red flags, automatically routing rejected drafts back for revisions (max 2 review cycles).
+- **Dual PDF Compilation Engine (Phase 3)**:
+  - **Pattern A (Web-Sleek PDF via Playwright)**: High-density CSS/Jinja2 layout.
+  - **Pattern B (Institutional Typst PDF)**: Beautiful, typographically elegant rendering via Jinja2-rendered Typst code.
+- **Zero-API Offline Testing Mode**: Set `MOCK_LLM=true` in your environment to intercept all text, vision, and LangChain model bindings, recursively mock pydantic schemas, and run/debug the full graph completely offline with **zero cost and zero dependencies**.
+- **Deep-Merging State Reducers**: Structured, nested map-reducer schemas that completely eliminate parallel graph write-collisions, ensuring data consistency across company, market, and competitor profiles.
