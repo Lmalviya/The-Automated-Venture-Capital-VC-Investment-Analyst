@@ -54,6 +54,20 @@ class StorageConfig(BaseSettings):
     region_name: str = Field(default="us-east-1", alias="STORAGE_REGION")
     bucket_name: str = Field(..., alias="STORAGE_BUCKET")
 
+
+class DatabaseConfig(BaseSettings):
+    host: str = Field(default="localhost", alias="POSTGRES_HOST")
+    port: int = Field(default=5432, alias="POSTGRES_PORT")
+    user: str = Field(default="postgres", alias="POSTGRES_USER")
+    password: SecretStr = Field(default="postgrespassword", alias="POSTGRES_PASSWORD")
+    db: str = Field(default="vc_analyst", alias="POSTGRES_DB")
+
+    @computed_field
+    @property
+    def url(self) -> str:
+        return f"postgresql://{self.user}:{self.password.get_secret_value()}@{self.host}:{self.port}/{self.db}"
+
+
 class Settings(BaseSettings):
     """
     Central application settings
@@ -113,6 +127,8 @@ class Settings(BaseSettings):
     llm: TextLLMConfig = TextLLMConfig()
     vlm: ImageVLMConfig = ImageVLMConfig()
     storage_config: StorageConfig = StorageConfig()
+    db: DatabaseConfig = DatabaseConfig()
+
 
 
 @lru_cache

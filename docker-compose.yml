@@ -63,8 +63,10 @@ services:
       - S3_ACCESS_KEY=minioadmin
       - S3_SECRET_KEY=minioadminpassword
       - S3_BUCKET_NAME=vc-analyst-decks
+      - POSTGRES_HOST=postgres
     depends_on:
       - minio
+      - postgres
     networks:
       - vc-analyst-network
 
@@ -81,8 +83,24 @@ services:
       - vc-analyst-network
     restart: always
 
+  postgres:
+    image: postgres:16-alpine
+    container_name: vc-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: vc_analyst
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - vc-analyst-network
+    restart: always
+
 volumes:
   minio_data:
+  postgres_data:
 
 networks:
   vc-analyst-network:

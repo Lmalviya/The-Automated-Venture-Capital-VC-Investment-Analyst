@@ -11,6 +11,8 @@ from vs_analyst.utility.storage.s3 import S3StorageProvider
 from vs_analyst.orchestrator.pipeline import run_pipeline
 from vs_analyst.schemas.state import AnalysisState
 from vs_analyst.schemas.user_inputs import UserInputSchema, InvestmentStage
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+
 
 logger = get_logger(__name__)
 
@@ -153,9 +155,20 @@ class AnalysisService:
                 user_input=user_input
             )
 
-            # 5. Run LangGraph Pipeline
+            # 5. Run LangGraph Pipeline with PostgreSQL Checkpointer and graceful fallback
             logger.info("Invoking LangGraph pipeline execution")
-            final_state = await run_pipeline(state)
+            db_url = settings.db.url
+            try:
+                logger.info("Connecting to PostgreSQL checkpointer database", db_url=db_url)
+                async with AsyncPostgresSaver.from_conn_string(db_url) as checkpointer:
+                    await checkpointer.setup()
+                    logger.info("Database checkpoint schema successfully validated/created. Executing pipeline...")
+                    final_state = await run_pipeline(state, checkpointer=checkpointer)
+            except Exception as db_err:
+                logger.error("Failed to connect or setup PostgreSQL checkpoint store. Falling back to in-memory non-persistent execution", error=str(db_err))
+                # Fallback to default in-memory run without checkpointer
+                final_state = await run_pipeline(state, checkpointer=None)
+
 
             # # 6. Extract results from pipeline final state
             # company_data = final_state.company.model_dump() if final_state.company else {}

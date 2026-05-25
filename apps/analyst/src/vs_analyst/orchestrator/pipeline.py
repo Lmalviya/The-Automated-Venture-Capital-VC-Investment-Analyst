@@ -149,7 +149,7 @@ pipeline = workflow.compile()
 #  Entrypoint
 # =========================================================
 
-async def run_pipeline(analysis_state: AnalysisState) -> AnalysisState:
+async def run_pipeline(analysis_state: AnalysisState, checkpointer: Any = None) -> AnalysisState:
     """
     Public entrypoint to execute the full VC analysis pipeline.
 
@@ -166,7 +166,17 @@ async def run_pipeline(analysis_state: AnalysisState) -> AnalysisState:
         "raw_website_text": None
     }
 
-    final_state = await pipeline.ainvoke(initial_state)
+    if checkpointer is not None:
+        logger.info("Compiling StateGraph with persistent checkpointer", run_id=analysis_state.run_id)
+        compiled_pipeline = workflow.compile(checkpointer=checkpointer)
+        config = {"configurable": {"thread_id": analysis_state.run_id}}
+    else:
+        logger.info("Running StateGraph with default in-memory compilation", run_id=analysis_state.run_id)
+        compiled_pipeline = pipeline
+        config = {}
+
+    final_state = await compiled_pipeline.ainvoke(initial_state, config=config)
 
     logger.info("Pipeline completed", run_id=analysis_state.run_id)
     return final_state["analysis_state"]
+
