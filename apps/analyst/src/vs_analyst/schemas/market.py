@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field
 from enum import Enum
 from typing import Optional
 
@@ -12,7 +12,7 @@ class MarketSize(BaseModel):
     value : Optional[str] = None # e.g. "$4.2B", "₹800Cr"
     year : Optional[str] = None # e.g. "2024", "2024–2028"
     source : Optional[str] = None # e.g. "Statista 2024", "Grand View Research"
-    source_url : Optional[HttpUrl] = None
+    source_url : Optional[str] = None
     confidence : ConfidenceLevel = ConfidenceLevel.LOW
     notes : Optional[str] = None # LLM caveat e.g. "Adjacent market, not exact"
 

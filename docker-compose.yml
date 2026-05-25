@@ -59,29 +59,60 @@ services:
       - .env
     environment:
       - PYTHONUNBUFFERED=1
-      - S3_ENDPOINT_URL=http://minio:9000
-      - S3_ACCESS_KEY=minioadmin
-      - S3_SECRET_KEY=minioadminpassword
-      - S3_BUCKET_NAME=vc-analyst-decks
+      - STORAGE_ENDPOINT=http://minio:9000
+      - STORAGE_ACCESS_KEY=minioadmin
+      - STORAGE_SECRET_KEY=minioadminpassword
+      - STORAGE_BUCKET=vc-analyst-decks
+      - STORAGE_REGION=us-east-1
       - POSTGRES_HOST=postgres
+      - SEARXNG_URL=http://searxng:8080
     depends_on:
       - minio
       - postgres
+    volumes:
+      - ./outputs:/app/outputs
     networks:
       - vc-analyst-network
+
+  redis:
+      image: redis:7-alpine
+      container_name: redis
+      restart: unless-stopped
+      ports:
+        - "6379:6379"
+      command: >
+        redis-server
+        --appendonly yes
+        --save 60 1000
+        --loglevel warning
+      volumes:
+        - redis_data:/data
+      networks:
+        - vc-analyst-network
+      healthcheck:
+        test: ["CMD", "redis-cli", "ping"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
 
   searxng:
     image: searxng/searxng:latest
     container_name: searxng
+    restart: unless-stopped
     ports:
       - "8080:8080"
     volumes:
-      - ./searxng:/etc/searxng:ro
+      - ./searxng:/etc/searxng
     environment:
-      - SEARXNG_SETTINGS_PATH=/etc/searxng/settings.yml
+      - BASE_URL=http://localhost:8080/
+      - INSTANCE_NAME=MySearxNG
+      - SEARXNG_REDIS_URL=redis://redis:6379/0
+    # environment:
+    #   - SEARXNG_SETTINGS_PATH=/etc/searxng/settings.yml
     networks:
       - vc-analyst-network
-    restart: always
+    depends_on:
+      - redis
 
   postgres:
     image: postgres:16-alpine
@@ -101,6 +132,7 @@ services:
 volumes:
   minio_data:
   postgres_data:
+  redis_data:
 
 networks:
   vc-analyst-network:

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field
 from enum import Enum
 import uuid
 from typing import Optional
@@ -18,7 +18,7 @@ class CompetitorSchema(BaseModel):
 
     # ── Identity ──────────────────────────────────────────
     name : str
-    website_url : Optional[HttpUrl] = None
+    website_url : Optional[str] = None
     competitor_type : CompetitorType = CompetitorType.DIRECT
 
     # ── Fixed dimensions (universal — always compared) ────

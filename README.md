@@ -64,19 +64,34 @@ Create a `.env` file inside the `apps/analyst/` directory to configure your LLM 
 OPENAI_API_KEY=your_openai_api_key_here
 ```
 
-### 2. Boot the Entire Microservices Stack
-From the root of the repository, execute the following command:
+### 2. Boot the entire stack or individual services
+From the root of the repository, execute the following command to build and start all containers in the background:
 ```bash
-docker compose up --build
+docker compose up --build -d
 ```
-This builds each service's respective Docker container and wires up internal container network links.
+Alternatively, if you want to boot and run the **Analyst Engine** and its core persistence/web research dependencies only:
+```bash
+docker compose up --build -d analyst postgres minio searxng
+```
 
 ### 3. Verify Container Endpoints
 Once the build is complete, you can access the services on your local machine:
 * **Frontend Web App UI**: http://localhost:3000
 * **Backend API Gateway Docs (Swagger)**: http://localhost:8000/docs
 * **Analyst Agent API Docs (Swagger)**: http://localhost:8001/docs
+* **PostgreSQL State Saver Database**: `localhost:5432` (Credentials: `postgres` / `postgrespassword`, DB name: `vc_analyst`)
 * **MinIO Object Storage Console**: http://localhost:9001 (Credentials: `minioadmin` / `minioadminpassword`)
+* **Searxng Local Search Engine**: http://localhost:8080
+
+---
+
+## Output Persistence & Report Storage
+
+All compiled PDF reports generated during the agentic IC review process are saved inside your host workspace directory in real-time:
+- **Pattern A (Web-Sleek PDF via Playwright)**: `./outputs/{run_id}/memo_web.pdf`
+- **Pattern B (Institutional Typst PDF)**: `./outputs/{run_id}/memo_typst.pdf`
+
+These compiled reports are synced between the container environment and your local machine via a mounted Docker volume, ensuring data persistence and easy local access after container shutdown.
 
 ---
 

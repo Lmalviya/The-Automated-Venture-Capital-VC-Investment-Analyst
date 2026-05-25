@@ -5,23 +5,44 @@ use_default_settings: true
 server:
   port: 8080
   bind_address: "0.0.0.0"
-  secret_key: "antigravity_vc_analyst_secret_key"
+  secret_key: "ultra-secret-key-change-me" # You should change this
+  base_url: http://localhost:8080/
+  public_instance: false # This disables some stricter protections intended for public deployments.
+  limiter: false # Disable rate limiter and bot detection
 
 search:
+  formats:
+    - html
+    - json
   safe_search: 0
   autocomplete: ""
 
-# Engine overrides if needed (default set includes Google, DuckDuckGo, Bing, etc.)
+
 engines:
   - name: google
-    engine: google
-    shortcut: go
-    timeout: 3.0
+    disabled: true
+  - name: bing
+    disabled: true
   - name: duckduckgo
     engine: duckduckgo
     shortcut: ddg
-    timeout: 3.0
+    timeout: 6.0
+    disabled: false
+  - name: brave
+    engine: brave
+    shortcut: br
+    timeout: 6.0
+    disabled: false
+  - name: qwant
+    engine: qwant
+    shortcut: qw
+    timeout: 6.0
+    disabled: false
   - name: wikipedia
     engine: wikipedia
     shortcut: wp
-    timeout: 3.0
+    timeout: 6.0
+    disabled: false
+
+valkey:
+  url: redis://redis:6379/0

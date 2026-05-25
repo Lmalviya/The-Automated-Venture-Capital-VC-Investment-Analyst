@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Union, Literal
 
 from vs_analyst.schemas.shared_enums import BusinessModel, ConfidenceLevel
@@ -19,7 +19,7 @@ class CompanyAdaptor(BaseModel):
                                )
     problem_statement: str = Field(default=None, description="The problem the company is trying to solve")
     solution: str = Field(default=None, description="The solution offered by the company")
-    website_url: Optional[HttpUrl] = Field(default=None, description="Company website URL")
+    website_url: Optional[str] = Field(default=None, description="Company website URL")
     sector: Optional[str] = Field(default=None, description="Industry sector of the company")
     geography: Optional[str] = Field(default=None, description="Geographical location of the company")
     employee_count: Optional[str] = Field(default=None, description="Number of employees, e.g. '12' or '10-15'")
@@ -46,7 +46,7 @@ class MarketAdaptor(BaseModel):
 class FounderAdaptor(BaseModel):
     name: str = Field(..., description="Full name of the founder")
     role: FounderRole = Field(default=FounderRole.UNKNOWN, description="Role of the founder, possible values are CEO, CTO, COO, other")
-    linkedin_url: Optional[HttpUrl] = Field(default=None, description="LinkedIn profile URL")
+    linkedin_url: Optional[str] = Field(default=None, description="LinkedIn profile URL")
 
     bio_from_deck: Optional[str] = Field(default=None, description="Founder biography extracted from the pitch deck")
     past_companies: List[str] = Field(default_factory=list, description="List of past companies the founder worked at")
@@ -77,7 +77,7 @@ class FinanceAdaptor(BaseModel):
 # --- Competitor Information ---
 class CompetitorSchemaAdaptor(BaseModel):
     name : str
-    website_url : Optional[HttpUrl] = None
+    website_url : Optional[str] = None
     competitor_type : CompetitorType = CompetitorType.DIRECT
 
 class CompetitorAdaptor(BaseModel):
@@ -142,7 +142,7 @@ class CompetitorPlannerDecision(BaseModel):
 
 class CompetitorDiscoveryEntry(BaseModel):
     name: str = Field(..., description="Competitor name")
-    website_url: Optional[HttpUrl] = Field(default=None, description="Competitor website URL")
+    website_url: Optional[str] = Field(default=None, description="Competitor website URL")
     competitor_type: CompetitorType = Field(default=CompetitorType.DIRECT, description="Competitor classification")
     rationale: str = Field(..., description="One-sentence rationale for type and selection")
 

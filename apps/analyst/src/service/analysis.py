@@ -170,31 +170,35 @@ class AnalysisService:
                 final_state = await run_pipeline(state, checkpointer=None)
 
 
-            # # 6. Extract results from pipeline final state
-            # company_data = final_state.company.model_dump() if final_state.company else {}
-            # market_data = final_state.market.model_dump() if final_state.market else {}
-            # founders_data = [f.model_dump() for f in final_state.founders] if final_state.founders else []
-            # finance_data = final_state.finance.model_dump() if final_state.finance else {}
-            # competitors_data = final_state.competitive.model_dump() if final_state.competitive else {}
+            # 6. Extract results from pipeline final state
+            company_data = final_state.company.model_dump() if final_state.company else {}
+            market_data = final_state.market.model_dump() if final_state.market else {}
+            founders_data = [f.model_dump() for f in final_state.founders] if final_state.founders else []
+            finance_data = final_state.finance.model_dump() if final_state.finance else {}
+            competitors_data = final_state.competitive.model_dump() if final_state.competitive else {}
+            memo_data = final_state.memo.model_dump() if final_state.memo else {}
 
-            # report = {
-            #     "startup_name": startup_name,
-            #     "status": "completed",
-            #     "metadata": {
-            #         "sector": industry_sector,
-            #         "stage": stage_enum.value if stage_enum else None,
-            #         "requested_amount": requested_amount,
-            #         "file_processed": file_path
-            #     },
-            #     "analysis": {
-            #         "company_profile": company_data,
-            #         "market_analysis": market_data,
-            #         "founders": founders_data,
-            #         "financial_metrics": finance_data,
-            #         "competitive_landscape": competitors_data,
-            #         "agent_run_statuses": final_state.agent_statuses
-            #     }
-            # }
+            report = {
+                "startup_name": startup_name,
+                "status": "completed",
+                "metadata": {
+                    "sector": industry_sector,
+                    "stage": stage_enum.value if stage_enum else None,
+                    "requested_amount": requested_amount,
+                    "file_processed": file_path,
+                    "html_pdf_path": final_state.memo.html_pdf_path,
+                    "typst_pdf_path": final_state.memo.typst_pdf_path
+                },
+                "analysis": {
+                    "company_profile": company_data,
+                    "market_analysis": market_data,
+                    "founders": founders_data,
+                    "financial_metrics": finance_data,
+                    "competitive_landscape": competitors_data,
+                    "memo": memo_data,
+                    "agent_run_statuses": final_state.agent_statuses
+                }
+            }
 
             logger.info("Pipeline executed successfully. Dispatching success callback.")
             await self.send_webhook(
@@ -202,8 +206,9 @@ class AnalysisService:
                 event_type="pipeline_success",
                 status="completed",
                 message="Analysis pipeline completed successfully!",
-                data={} # report
+                data=report
             )
+
 
         except ValueError as ve:
             # Input validation and format errors (safe to show to the user)

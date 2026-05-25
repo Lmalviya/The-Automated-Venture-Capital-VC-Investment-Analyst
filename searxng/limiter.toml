@@ -1,0 +1,14 @@
+[botdetection]
+trusted_proxies = [
+  '127.0.0.0/8',
+  '172.16.0.0/12',
+  '192.168.0.0/16',
+  '::1',
+]
+
+[botdetection.ip_limit]
+filter_link_local = false
+link_token = false
+
+[botdetection.ip_lists]
+pass_searxng_org = true

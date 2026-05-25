@@ -1,4 +1,4 @@
-from pydantic import BaseModel, HttpUrl, Field
+from pydantic import BaseModel, Field
 from typing import Optional, List, Dict
 from enum import Enum 
 from datetime import datetime
@@ -33,7 +33,7 @@ class CompanySchema(BaseModel):
     problem_statement: str = Field(default=None, description="The problem the company is trying to solve")
     solution: str = Field(default=None, description="The solution offered by the company")
     
-    website_url: Optional[HttpUrl] = Field(default=None, description="Company website URL")
+    website_url: Optional[str] = Field(default=None, description="Company website URL")
     sector: Optional[str] = Field(default=None, description="Industry sector of the company")
     geography: Optional[str] = Field(default=None, description="Geographical location of the company")
     employee_count: Optional[str] = Field(default=None, description="Number of employees, e.g. '12' or '10-15'") 

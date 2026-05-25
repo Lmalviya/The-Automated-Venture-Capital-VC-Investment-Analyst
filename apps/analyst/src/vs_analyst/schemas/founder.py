@@ -1,5 +1,5 @@
 import uuid
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field
 from enum import Enum
 from typing import List, Optional
 from datetime import datetime
@@ -25,7 +25,7 @@ class FounderSchema(BaseModel):
     founder_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str = Field(..., description="Full name of the founder")
     role: FounderRole = Field(default=FounderRole.UNKNOWN, description="Role of the founder, possible values are CEO, CTO, COO, other")
-    linkedin_url: Optional[HttpUrl] = Field(default=None, description="LinkedIn profile URL")
+    linkedin_url: Optional[str] = Field(default=None, description="LinkedIn profile URL")
 
     bio_from_deck: Optional[str] = Field(default=None, description="Founder biography extracted from the pitch deck")
     past_companies: List[str] = Field(default_factory=list, description="List of past companies the founder worked at")
@@ -39,7 +39,7 @@ class FounderSchema(BaseModel):
     red_flags: Optional[List[str]] = Field(default=None, description="Identified inconsistencies, gaps, or concerns")
 
     # ── Personal GitHub signals (DD Manager) ──────────
-    github_url          : Optional[HttpUrl] = None
+    github_url          : Optional[str] = None
     github_public_repos : Optional[int] = None
     github_languages    : list[str] = []     # ["Python", "Go"]
     github_oss_notable  : list[str] = []     # notable OSS projects/contributions
