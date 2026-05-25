@@ -2,6 +2,8 @@
 
 Autonomous multi-agent research platform built with LangGraph orchestration, FastAPI microservices, and production-grade infrastructure to evaluate startup pitch decks and compile institutional-grade investment memos.
 
+![VC Analyst UI Dashboard](ui.png)
+
 ---
 
 ## 🏗️ Architecture
